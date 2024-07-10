@@ -17,6 +17,11 @@ Resources:
     - $file: resources/iam/role/line_notify.yml
     - $file: resources/iam/policy/line_notify.yml
 
+    # 概要情報スクレイピングタスクの登録（小エリアごと）
+    - $file: resources/lambda/register_task_scraping_abstract_small_areas.yml
+    - $file: resources/iam/role/register_task_scraping_abstract_small_areas.yml
+    - $file: resources/iam/policy/register_task_scraping_abstract_small_areas.yml
+
     # EventBridgeスケジュールグループ
     - $file: resources/eventbridge/group.yml
 
@@ -30,3 +35,9 @@ Outputs:
         Value: !GetAtt "LambdaLineNotify.Arn"
         Export:
             Name: "ARN-LambdaLineNotify"
+
+    # LINE通知LambdaのARN
+    ArnLambdaRegisterTaskScrapingAbstractSmallAreas:
+        Value: !GetAtt "LambdaRegisterTaskScrapingAbstractSmallAreas.Arn"
+        Export:
+            Name: "ARN-LambdaRegisterTaskScrapingAbstractSmallAreas"
