@@ -134,7 +134,7 @@ def register_tasks(small_areas: list) -> None:
             FlexibleTimeWindow={"Mode": "OFF"},
             State="ENABLED",
             Target={
-                # "Arn": os.environ["ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRACT_PAGES"],
+                "Arn": os.environ["ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRACT_PAGES"],
                 "Input": json.dumps(area),
                 "RoleArn": os.environ["ARN_INVOKE_REGISTER_TASK_SCRAPING_ABSTRACT_SMALL_AREAS"],
             },

@@ -11,6 +11,8 @@ LambdaRegisterTaskScrapingAbstractSmallAreas:
         Environment:
             Variables:
                 ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRACT_PAGES: !GetAtt "LambdaRegisterTaskScrapingAbstractPages.Arn"
+                ARN_INVOKE_REGISTER_TASK_SCRAPING_ABSTRACT_SMALL_AREAS: !GetAtt "IamRoleInvokeRegisterTaskScrapingAbstractSmallAreas.Arn"
                 SCHEDULE_GROUP_NAME: !Ref "EventBridgeScheduleGroup"
         Handler: "app.lambda_handler"
         Architectures:
