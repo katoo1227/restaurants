@@ -17,6 +17,9 @@ Resources:
     - $file: resources/iam/role/line_notify.yml
     - $file: resources/iam/policy/line_notify.yml
 
+    # EventBridgeスケジュールグループ
+    - $file: resources/eventbridge/group.yml
+
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
     - $file: resources/dynamodb/restaurants_areas.yml
