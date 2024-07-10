@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+
+Parameters:
+    # デプロイ先環境の設定
+    EnvironmentType:
+        Type: "String"
+        AllowedValues: ["dev", "prod"]
+
+Conditions:
+    # 本番環境かどうか
+    IsProd: !Equals [!Ref "EnvironmentType", "prod"]
+
+Resources:
+    # LINE通知
+    - $file: resources/lambda/line_notify.yml
+    - $file: resources/iam/role/line_notify.yml
+    - $file: resources/iam/policy/line_notify.yml
+
+Outputs:
+    # LINE通知LambdaのARN
+    ArnLambdaLineNotify:
+        Value: !GetAtt "LambdaLineNotify.Arn"
+        Export:
+            Name: "ARN-LambdaLineNotify"
