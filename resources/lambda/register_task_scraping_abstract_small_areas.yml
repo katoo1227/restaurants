@@ -16,3 +16,18 @@ LambdaRegisterTaskScrapingAbstractSmallAreas:
         Architectures:
             - "arm64"
         Timeout: 30
+
+        Events:
+            EventBridgeScheduleLambdaRegisterTaskScrapingAbstract:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 0 ? * SUN *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "RestaurantsLambdaRegisterTaskScrapingAbstractSmallAreasProd"
+                        - "RestaurantsLambdaRegisterTaskScrapingAbstractSmallAreasDev"
+                    RoleArn: !GetAtt "IamRoleInvokeRegisterTaskScrapingAbstractSmallAreas.Arn"
+                    Input: '{"middle_area_code": "Y883"}'

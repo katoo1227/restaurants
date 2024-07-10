@@ -12,15 +12,24 @@ Conditions:
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
 
 Resources:
-    # LINE通知
+    # Lambda - LINE通知
     - $file: resources/lambda/line_notify.yml
     - $file: resources/iam/role/line_notify.yml
     - $file: resources/iam/policy/line_notify.yml
 
-    # 概要情報スクレイピングタスクの登録（小エリアごと）
+    # Lambda - 概要情報スクレイピングタスクの登録（小エリアごと）
     - $file: resources/lambda/register_task_scraping_abstract_small_areas.yml
     - $file: resources/iam/role/register_task_scraping_abstract_small_areas.yml
     - $file: resources/iam/policy/register_task_scraping_abstract_small_areas.yml
+
+    # EventBridge - 概要情報スクレイピングタスクの登録（小エリアごと）
+    - $file: resources/iam/role/invoke_register_task_scraping_abstract_small_areas.yml
+    - $file: resources/iam/policy/invoke_register_task_scraping_abstract_small_areas.yml
+
+    # 概要情報スクレイピングタスクの登録（ページごと）
+    - $file: resources/lambda/register_task_scraping_abstract_pages.yml
+    - $file: resources/iam/role/register_task_scraping_abstract_pages.yml
+    - $file: resources/iam/policy/register_task_scraping_abstract_pages.yml
 
     # EventBridgeスケジュールグループ
     - $file: resources/eventbridge/group.yml
