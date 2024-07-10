@@ -21,5 +21,9 @@ IamPolicyRegisterTaskScrapingAbstractSmallAreas:
                   Action:
                       - "scheduler:CreateSchedule"
                   Resource: "*"
+                - Effect: "Allow"
+                  Action:
+                      - "iam:PassRole"
+                  Resource: !GetAtt "IamRoleInvokeRegisterTaskScrapingAbstractSmallAreas.Arn"
         Roles:
             - !Ref "IamRoleRegisterTaskScrapingAbstractSmallAreas"

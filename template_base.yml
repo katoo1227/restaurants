@@ -45,8 +45,14 @@ Outputs:
         Export:
             Name: "ARN-LambdaLineNotify"
 
-    # LINE通知LambdaのARN
+    # 概要情報スクレイピングタスクの登録（小エリアごと）LambdaのARN
     ArnLambdaRegisterTaskScrapingAbstractSmallAreas:
         Value: !GetAtt "LambdaRegisterTaskScrapingAbstractSmallAreas.Arn"
         Export:
             Name: "ARN-LambdaRegisterTaskScrapingAbstractSmallAreas"
+
+    # 概要情報スクレイピングタスクの登録（ページごと）LambdaのARN
+    ArnLambdaRegisterTaskScrapingAbstractPages:
+        Value: !GetAtt "LambdaRegisterTaskScrapingAbstractPages.Arn"
+        Export:
+            Name: "ARN-LambdaRegisterTaskScrapingAbstractPages"
