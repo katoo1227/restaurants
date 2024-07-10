@@ -1,0 +1,7 @@
+EventBridgeScheduleGroup:
+    Type: "AWS::Scheduler::ScheduleGroup"
+    Properties:
+        Name: !If
+            - "IsProd"
+            - "Restaurants"
+            - "RestaurantsDev"
