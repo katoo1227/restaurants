@@ -17,6 +17,10 @@ Resources:
     - $file: resources/iam/role/line_notify.yml
     - $file: resources/iam/policy/line_notify.yml
 
+    # DynamoDB
+    - $file: resources/dynamodb/restaurants.yml
+    - $file: resources/dynamodb/restaurants_areas.yml
+
 Outputs:
     # LINE通知LambdaのARN
     ArnLambdaLineNotify:

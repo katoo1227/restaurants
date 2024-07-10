@@ -1,0 +1,28 @@
+DynamodbRestaurants:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+        TableName: !If
+            - "IsProd"
+            - "Restaurants"
+            - "RestaurantsDev"
+        AttributeDefinitions:
+            - AttributeName: "id"
+              AttributeType: "S"
+            - AttributeName: "is_notified"
+              AttributeType: "N"
+        KeySchema:
+            - AttributeName: "id"
+              KeyType: "HASH"
+        ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        GlobalSecondaryIndexes:
+            - IndexName: "IsNotifiedIndex"
+              KeySchema:
+                  - AttributeName: "is_notified"
+                    KeyType: "HASH"
+              Projection:
+                  ProjectionType: "ALL"
+              ProvisionedThroughput:
+                  ReadCapacityUnits: 5
+                  WriteCapacityUnits: 5
