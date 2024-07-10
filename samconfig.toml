@@ -1,0 +1,20 @@
+version = 0.1
+[dev.deploy.parameters]
+stack_name = "RestaurantsDeployDev"
+resolve_s3 = true
+s3_prefix = "RestaurantsDeployDev"
+region = "ap-northeast-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_NAMED_IAM"
+disable_rollback = true
+image_repositories = []
+
+[prod.deploy.parameters]
+stack_name = "RestaurantsDeployProd"
+resolve_s3 = true
+s3_prefix = "RestaurantsDeployProd"
+region = "ap-northeast-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_NAMED_IAM"
+disable_rollback = true
+image_repositories = []

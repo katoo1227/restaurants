@@ -1,0 +1,18 @@
+IamPolicyLineNotify:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsLineNotifyProd"
+            - "RestaurantsLineNotifyDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/restaurants/token"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/error_notify/token"
+        Roles:
+            - !Ref "IamRoleLineNotify"

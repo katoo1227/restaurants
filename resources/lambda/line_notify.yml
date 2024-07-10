@@ -1,0 +1,14 @@
+LambdaLineNotify:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        Handler: app.lambda_handler
+        CodeUri: "./lambda_functions/line_notify/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsLineNotifyProd"
+            - "RestaurantsLineNotifyDev"
+        Role: !GetAtt "IamRoleLineNotify.Arn"
+        Runtime: "python3.10"
+        Architectures:
+            - "arm64"
+        Timeout: 30
