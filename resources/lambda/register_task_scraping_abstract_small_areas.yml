@@ -1,0 +1,18 @@
+LambdaRegisterTaskScrapingAbstractSmallAreas:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/register_task_scraping_abstract_small_areas/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsRegisterTaskScrapingAbstractSmallAreasProd"
+            - "RestaurantsRegisterTaskScrapingAbstractSmallAreasDev"
+        Role: !GetAtt "IamRoleRegisterTaskScrapingAbstractSmallAreas.Arn"
+        Runtime: "python3.10"
+        Environment:
+            Variables:
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                SCHEDULE_GROUP_NAME: !Ref "EventBridgeScheduleGroup"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
