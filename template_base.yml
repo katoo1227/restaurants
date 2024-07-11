@@ -12,27 +12,43 @@ Conditions:
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
 
 Resources:
-    # Lambda - LINE通知
-    - $file: resources/lambda/line_notify.yml
-    - $file: resources/iam/role/line_notify.yml
-    - $file: resources/iam/policy/line_notify.yml
+    # Lambdaレイヤー - check_area_code_names
+    - $file: resources/lambda_layers/check_area_code_names.yml
 
-    # Lambda - 概要情報スクレイピングタスクの登録（小エリアごと）
-    - $file: resources/lambda/register_task_scraping_abstract_small_areas.yml
-    - $file: resources/iam/role/register_task_scraping_abstract_small_areas.yml
-    - $file: resources/iam/policy/register_task_scraping_abstract_small_areas.yml
+    # Lambda - LINE通知
+    - $file: resources/line_notify/lambda.yml
+    - $file: resources/line_notify/iam_role.yml
+    - $file: resources/line_notify/iam_policy.yml
 
     # EventBridge - 概要情報スクレイピングタスクの登録（小エリアごと）
-    - $file: resources/iam/role/invoke_register_task_scraping_abstract_small_areas.yml
-    - $file: resources/iam/policy/invoke_register_task_scraping_abstract_small_areas.yml
+    - $file: resources/invoke_register_task_scraping_abstract_small_areas/iam_role.yml
+    - $file: resources/invoke_register_task_scraping_abstract_small_areas/iam_policy.yml
 
-    # 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/lambda/register_task_scraping_abstract_pages.yml
-    - $file: resources/iam/role/register_task_scraping_abstract_pages.yml
-    - $file: resources/iam/policy/register_task_scraping_abstract_pages.yml
+    # Lambda - 概要情報スクレイピングタスクの登録（小エリアごと）
+    - $file: resources/register_task_scraping_abstract_small_areas/lambda.yml
+    - $file: resources/register_task_scraping_abstract_small_areas/iam_role.yml
+    - $file: resources/register_task_scraping_abstract_small_areas/iam_policy.yml
+
+    # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
+    - $file: resources/invoke_register_task_scraping_abstract_pages/iam_role.yml
+    - $file: resources/invoke_register_task_scraping_abstract_pages/iam_policy.yml
+
+    # Lambda - 概要情報スクレイピングタスクの登録（ページごと）
+    - $file: resources/register_task_scraping_abstract_pages/lambda.yml
+    - $file: resources/register_task_scraping_abstract_pages/iam_role.yml
+    - $file: resources/register_task_scraping_abstract_pages/iam_policy.yml
+
+    # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
+    - $file: resources/invoke_scraping_abstract/iam_role.yml
+    - $file: resources/invoke_scraping_abstract/iam_policy.yml
+
+    # Lambda - 概要情報スクレイピング
+    - $file: resources/scraping_abstract/lambda.yml
+    - $file: resources/scraping_abstract/iam_role.yml
+    - $file: resources/scraping_abstract/iam_policy.yml
 
     # EventBridgeスケジュールグループ
-    - $file: resources/eventbridge/group.yml
+    - $file: resources/eventbridge/schedule_group.yml
 
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
@@ -56,3 +72,9 @@ Outputs:
         Value: !GetAtt "LambdaRegisterTaskScrapingAbstractPages.Arn"
         Export:
             Name: "ARN-LambdaRegisterTaskScrapingAbstractPages"
+
+    # 概要情報スクレイピングLambdaのARN
+    ArnLambdaScrapingAbstract:
+        Value: !GetAtt "LambdaScrapingAbstract.Arn"
+        Export:
+            Name: "ARN-LambdaScrapingAbstract"
