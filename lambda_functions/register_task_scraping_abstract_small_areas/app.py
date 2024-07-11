@@ -22,10 +22,9 @@ def lambda_handler(event, context):
 
         # 小エリア一覧を取得
         small_areas = get_small_areas(event["middle_area_code"])
-        print(small_areas)
 
         # 小エリアごとのタスクスケジュールを登録
-        # register_tasks(small_areas)
+        register_tasks(small_areas)
 
     except Exception as e:
         msg = f"""
@@ -89,8 +88,7 @@ def get_small_areas(code: str) -> list:
             "service_area_code": a["service_area"]["code"],
             "service_area_name": a["service_area"]["name"],
             "large_service_area_code": a["large_service_area"]["code"],
-            "large_service_area_name": a["large_service_area"]["name"],
-            "page_num": "1"
+            "large_service_area_name": a["large_service_area"]["name"]
         }
         for a in data["results"]["small_area"]
     ]
@@ -127,7 +125,7 @@ def register_tasks(small_areas: list) -> None:
         client.create_schedule(
             ActionAfterCompletion="DELETE",
             ClientToken="string",
-            Name=f"ScrapingAbstract_{area['small_area_code']}_page1",
+            Name=f"RegisterTaskScrapingAbstractPages_{area['small_area_code']}",
             GroupName=os.environ["SCHEDULE_GROUP_NAME"],
             ScheduleExpression=f"cron({jst.minute} {jst.hour} {jst.day} {jst.month} ? {jst.year})",
             ScheduleExpressionTimezone="Asia/Tokyo",

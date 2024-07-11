@@ -1,12 +1,12 @@
-LambdaRegisterTaskScrapingAbstractPages:
+LambdaScrapingAbstract:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/register_task_scraping_abstract_pages/"
+        CodeUri: "./lambda_functions/scraping_abstract/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsRegisterTaskScrapingAbstractPagesProd"
-            - "RestaurantsRegisterTaskScrapingAbstractPagesDev"
-        Role: !GetAtt "IamRoleRegisterTaskScrapingAbstractPages.Arn"
+            - "RestaurantsScrapingAbstractProd"
+            - "RestaurantsScrapingAbstractDev"
+        Role: !GetAtt "IamRoleScrapingAbstract.Arn"
         Runtime: "python3.10"
         Environment:
             Variables:
