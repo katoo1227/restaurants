@@ -3,7 +3,7 @@ DynamodbRestaurants:
     Properties:
         TableName: !If
             - "IsProd"
-            - "Restaurants"
+            - "RestaurantsProd"
             - "RestaurantsDev"
         AttributeDefinitions:
             - AttributeName: "id"
