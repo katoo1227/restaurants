@@ -1,16 +1,16 @@
-IamPolicyInvokeRegisterTaskScrapingAbstractSmallAreas:
+IamPolicyInvokeRegisterTasksTmpScrapingAbstractSmallAreas:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeRegisterTaskScrapingAbstractSmallAreasProd"
-            - "RestaurantsInvokeRegisterTaskScrapingAbstractSmallAreasDev"
+            - "RestaurantsInvokeRegisterTasksTmpScrapingAbstractSmallAreasProd"
+            - "RestaurantsInvokeRegisterTasksTmpScrapingAbstractSmallAreasDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaRegisterTaskScrapingAbstractSmallAreas.Arn"
+                  Resource: !GetAtt "LambdaRegisterTasksTmpScrapingAbstractSmallAreas.Arn"
         Roles:
-            - !Ref "IamRoleInvokeRegisterTaskScrapingAbstractSmallAreas"
+            - !Ref "IamRoleInvokeRegisterTasksTmpScrapingAbstractSmallAreas"

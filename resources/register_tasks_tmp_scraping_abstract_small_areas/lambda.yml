@@ -1,0 +1,34 @@
+LambdaRegisterTasksTmpScrapingAbstractSmallAreas:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/register_tasks_tmp_scraping_abstract_small_areas/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractSmallAreasProd"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractSmallAreasDev"
+        Role: !GetAtt "IamRoleRegisterTasksTmpScrapingAbstractSmallAreas.Arn"
+        Runtime: "python3.10"
+        Environment:
+            Variables:
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRAT_PAGES: !GetAtt "LambdaRegisterTaskScrapingAbstractPages.Arn"
+                NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+        Events:
+            EventBridgeScheduleLambdaRegisterTaskScrapingAbstract:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 0 ? * SUN *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "RestaurantsLambdaRegisterTasksTmpScrapingAbstractSmallAreasProd"
+                        - "RestaurantsLambdaRegisterTasksTmpScrapingAbstractSmallAreasDev"
+                    RoleArn: !GetAtt "IamRoleInvokeRegisterTasksTmpScrapingAbstractSmallAreas.Arn"
+                    Input: '{"middle_area_code": "Y883"}'

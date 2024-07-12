@@ -1,10 +1,10 @@
-IamPolicyRegisterTaskScrapingAbstractSmallAreas:
+IamPolicyRegisterTasksTmpScrapingAbstractSmallAreas:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsRegisterTaskScrapingAbstractSmallAreasProd"
-            - "RestaurantsRegisterTaskScrapingAbstractSmallAreasDev"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractSmallAreasProd"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractSmallAreasDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -19,11 +19,7 @@ IamPolicyRegisterTaskScrapingAbstractSmallAreas:
                   Resource: !GetAtt "LambdaLineNotify.Arn"
                 - Effect: "Allow"
                   Action:
-                      - "scheduler:CreateSchedule"
-                  Resource: "*"
-                - Effect: "Allow"
-                  Action:
-                      - "iam:PassRole"
-                  Resource: !GetAtt "IamRoleInvokeRegisterTaskScrapingAbstractSmallAreas.Arn"
+                      - "dynamodb:BatchWriteItem"
+                  Resource: !GetAtt "DynamodbRestaurantsTasksTmp.Arn"
         Roles:
-            - !Ref "IamRoleRegisterTaskScrapingAbstractSmallAreas"
+            - !Ref "IamRoleRegisterTasksTmpScrapingAbstractSmallAreas"
