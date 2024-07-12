@@ -8,9 +8,13 @@ LambdaScrapingAbstract:
             - "RestaurantsScrapingAbstractDev"
         Role: !GetAtt "IamRoleScrapingAbstract.Arn"
         Runtime: "python3.10"
+        Layers:
+            - !Ref "LambdaLayerCheckAreaCodeNames"
         Environment:
             Variables:
                 ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
+                NAME_DYNAMODB_RESTAURANTS_AREAS: !Ref "DynamodbRestaurantsAreas"
                 SCHEDULE_GROUP_NAME: !Ref "EventBridgeScheduleGroup"
         Handler: "app.lambda_handler"
         Architectures:
