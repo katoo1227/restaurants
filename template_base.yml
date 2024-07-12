@@ -15,6 +15,9 @@ Resources:
     # Lambdaレイヤー - check_area_code_names
     - $file: resources/lambda_layers/check_area_code_names.yml
 
+    # EventBridgeスケジュールグループ
+    - $file: resources/eventbridge/schedule_group.yml
+
     # Lambda - LINE通知
     - $file: resources/line_notify/lambda.yml
     - $file: resources/line_notify/iam_role.yml
@@ -29,14 +32,10 @@ Resources:
     - $file: resources/register_tasks_tmp_scraping_abstract_small_areas/iam_role.yml
     - $file: resources/register_tasks_tmp_scraping_abstract_small_areas/iam_policy.yml
 
-    # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/invoke_register_task_scraping_abstract_pages/iam_role.yml
-    - $file: resources/invoke_register_task_scraping_abstract_pages/iam_policy.yml
-
     # Lambda - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/register_task_scraping_abstract_pages/lambda.yml
-    - $file: resources/register_task_scraping_abstract_pages/iam_role.yml
-    - $file: resources/register_task_scraping_abstract_pages/iam_policy.yml
+    - $file: resources/register_tasks_tmp_scraping_abstract_pages/lambda.yml
+    - $file: resources/register_tasks_tmp_scraping_abstract_pages/iam_role.yml
+    - $file: resources/register_tasks_tmp_scraping_abstract_pages/iam_policy.yml
 
     # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
     - $file: resources/invoke_scraping_abstract/iam_role.yml
@@ -46,9 +45,6 @@ Resources:
     - $file: resources/scraping_abstract/lambda.yml
     - $file: resources/scraping_abstract/iam_role.yml
     - $file: resources/scraping_abstract/iam_policy.yml
-
-    # EventBridgeスケジュールグループ
-    - $file: resources/eventbridge/schedule_group.yml
 
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
@@ -69,10 +65,10 @@ Outputs:
             Name: "ARN-LambdaRegisterTasksTmpScrapingAbstractSmallAreas"
 
     # 概要情報スクレイピングタスクの登録（ページごと）LambdaのARN
-    ArnLambdaRegisterTaskScrapingAbstractPages:
-        Value: !GetAtt "LambdaRegisterTaskScrapingAbstractPages.Arn"
+    ArnLambdaRegisterTasksTmpScrapingAbstractPages:
+        Value: !GetAtt "LambdaRegisterTasksTmpScrapingAbstractPages.Arn"
         Export:
-            Name: "ARN-LambdaRegisterTaskScrapingAbstractPages"
+            Name: "ARN-LambdaRegisterTasksTmpScrapingAbstractPages"
 
     # 概要情報スクレイピングLambdaのARN
     ArnLambdaScrapingAbstract:

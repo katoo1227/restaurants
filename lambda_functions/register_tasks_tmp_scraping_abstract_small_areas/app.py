@@ -100,17 +100,26 @@ def register_tasks_tmp(small_areas: list) -> None:
     ----------
     small_areas: list
         [
-            large_service_area_code: str 大サービスエリアコード
-            large_service_area_name: str 大サービスエリア名
-            service_area_code: str サービスエリア名
-            service_area_name: str サービスエリア名
-            large_area_code: str 大エリアコード
-            large_area_name: str 大エリア名
-            middle_area_code: str 中エリアコード
-            middle_area_name: str 中エリア名
-            small_area_code: str 小エリアコード
-            small_area_name: str 小エリア名
-            page_num: str 何ページ目か（stringで送る）
+            large_service_area_code: str
+                大サービスエリアコード
+            large_service_area_name: str
+                大サービスエリア名
+            service_area_code: str
+                サービスエリア名
+            service_area_name: str
+                サービスエリア名
+            large_area_code: str
+                大エリアコード
+            large_area_name: str
+                大エリア名
+            middle_area_code: str
+                中エリアコード
+            middle_area_name: str
+                中エリア名
+            small_area_code: str
+                小エリアコード
+            small_area_name: str
+                小エリア名
         ]
     """
     dynamodb = boto3.client("dynamodb")
@@ -129,7 +138,7 @@ def register_tasks_tmp(small_areas: list) -> None:
             {
                 "PutRequest": {
                     "Item": {
-                        "kind": {"S": "RegisterTaskScrapingAbstractPages"},
+                        "kind": {"S": "RegisterTasksTmpScrapingAbstractPages"},
                         "params_id": {"S": a["small_area_code"]},
                         "exec_arn": {
                             "S": os.environ[

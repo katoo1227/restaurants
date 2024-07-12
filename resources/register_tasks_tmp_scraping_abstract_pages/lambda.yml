@@ -1,0 +1,21 @@
+LambdaRegisterTasksTmpScrapingAbstractPages:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/register_tasks_tmp_scraping_abstract_pages/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractPagesProd"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractPagesDev"
+        Role: !GetAtt "IamRoleRegisterTasksTmpScrapingAbstractPages.Arn"
+        Runtime: "python3.10"
+        Layers:
+            - !Ref "LambdaLayerCheckAreaCodeNames"
+        Environment:
+            Variables:
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_SCRAPING_ABSTRACT: !GetAtt "LambdaScrapingAbstract.Arn"
+                NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
