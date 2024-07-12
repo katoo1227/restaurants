@@ -53,6 +53,7 @@ Resources:
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
     - $file: resources/dynamodb/restaurants_areas.yml
+    - $file: resources/dynamodb/restaurants_tasks_tmp.yml
 
 Outputs:
     # LINE通知LambdaのARN

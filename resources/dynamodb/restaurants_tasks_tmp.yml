@@ -1,19 +1,19 @@
-DynamodbRestaurantsAreas:
+DynamodbRestaurantsTasksTmp:
     Type: "AWS::DynamoDB::Table"
     Properties:
         TableName: !If
             - "IsProd"
-            - "RestaurantsAreasProd"
-            - "RestaurantsAreasDev"
+            - "RestaurantsTasksTmpProd"
+            - "RestaurantsTasksTmpDev"
         AttributeDefinitions:
-            - AttributeName: "area_category"
+            - AttributeName: "kind"
               AttributeType: "S"
-            - AttributeName: "code_restaurant_id"
+            - AttributeName: "params_id"
               AttributeType: "S"
         KeySchema:
-            - AttributeName: "area_category"
+            - AttributeName: "kind"
               KeyType: "HASH"
-            - AttributeName: "code_restaurant_id"
+            - AttributeName: "params_id"
               KeyType: "RANGE"
         ProvisionedThroughput:
             ReadCapacityUnits: 5
