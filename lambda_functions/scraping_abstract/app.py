@@ -2,9 +2,11 @@ import boto3
 import os
 import json
 import requests
-import urllib.parse
 import re
-from datetime import datetime, time, timedelta
+import time
+from datetime import datetime
+from bs4 import BeautifulSoup
+from check_area_code_names import check_area_code_names
 
 
 def lambda_handler(event, context):
@@ -13,7 +15,26 @@ def lambda_handler(event, context):
     lambda_client = boto3.client("lambda")
 
     try:
-        pass
+        # イベントパラメータのチェック
+        event_check(event)
+
+        # 概要情報の取得
+        restaurant_ids = get_restaurant_ids(
+            event["service_area_code"],
+            event["middle_area_code"],
+            event["small_area_code"],
+            event["page_num"],
+        )
+
+        # restaurantsへの登録
+        register_restaurants(restaurant_ids)
+
+        # restaurants_areasへの登録
+        register_restaurants_areas(
+            {k: v for k, v in event.items() if k != "page_num"},
+            restaurant_ids,
+        )
+
     except Exception as e:
         msg = f"""
 {str(e)}
@@ -32,3 +53,183 @@ def lambda_handler(event, context):
         "statusCode": 200,
         "body": "Process Complete",
     }
+
+
+def event_check(event: dict) -> None:
+    """
+    イベントパラメータのチェック
+
+    Parameters
+    ----------
+    event: dict
+        イベントパラメータ
+
+    Raises
+    ------
+        Exception
+    """
+    # エリアコードとエリア名のチェック
+    check_area_code_names(event)
+
+    # page_numのチェック
+    if "page_num" not in event:
+        raise Exception(f"page_numがありません。{json.dumps(event)}")
+    if type(event["page_num"]) != int or event["page_num"] <= 0:
+        raise Exception(f"page_numの値が不正です。{json.dumps(event)}")
+
+
+def get_restaurant_ids(
+    service_area_code: str, middle_area_code: str, small_area_code: str, page_num: int
+) -> list[str]:
+    """
+    概要情報のスクレピング
+
+    Parameters
+    ----------
+    service_area_code: str
+        サービスエリアコード
+    middle_area_code: str
+        中エリアコード
+    small_area_code: str
+        小エリアコード
+    page_num: int
+        何ページ目か
+
+    Returns
+    -------
+    list
+        飲食店IDリスト
+    """
+    # URL
+    url_arr = [
+        "https://www.hotpepper.jp",
+        service_area_code,
+        middle_area_code,
+        small_area_code,
+        f"bgn{page_num}",
+    ]
+    url = "/".join(url_arr) + "/"
+
+    # HTML解析 2回目以降のアクセスは結果が変わらないので、2回アクセスする
+    html = requests.get(url)
+    time.sleep(1)
+    html = requests.get(url)
+    soup = BeautifulSoup(html.content, "html.parser")
+
+    # 飲食店名リンクを取得
+    links = soup.select(".shopDetailStoreName a")
+    if len(links) == 0:
+        raise Exception(f"「.shopDetailStoreName a」が存在しません。{url}")
+
+    # 結果配列を作成
+    results = []
+    for a in links:
+        match = re.search(r"/str(J\d+)/", a.get("href"))
+        if match is None:
+            raise Exception(f"飲食店IDの取得に失敗しました。{str(a)}")
+        results.append(match.group(1))
+
+    return results
+
+
+def register_restaurants(restaurant_ids: list[str]) -> None:
+    """
+    restaurantsへの登録
+
+    Parameters
+    ----------
+    restaurant_ids: list
+        飲食店IDリスト
+    """
+    dynamodb = boto3.client("dynamodb")
+    table_name = os.environ["NAME_DYNAMODB_RESTAURANTS"]
+
+    # パーティションキーで検索
+    ids = [{"id": {"S": id}} for id in restaurant_ids]
+    id_res = dynamodb.batch_get_item(RequestItems={table_name: {"Keys": ids}})
+    records = id_res["Responses"][table_name]
+
+    # 今の日時
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 追加データの作成
+    add_datas = []
+    record_ids = [r["id"]["S"] for r in records]
+    for id in restaurant_ids:
+        if id in record_ids:
+            continue
+        add_datas.append(
+            {
+                "PutRequest": {
+                    "Item": {
+                        "id": {"S": id},
+                        "is_notified": {"N": "0"},
+                        "created_at": {"S": now},
+                        "updated_at": {"S": now},
+                    }
+                }
+            }
+        )
+
+    # DynamoDBへの追加
+    if len(add_datas) > 0:
+        dynamodb.batch_write_item(RequestItems={table_name: add_datas})
+
+
+def register_restaurants_areas(event: dict, ids: list[str]):
+    """
+    restaurants_areasテーブルの登録
+
+    Parameters
+    ----------
+    event: dict
+        large_service_area_code: str
+            大サービスエリアコード
+        large_service_area_name: str
+            大サービスエリア名
+        service_area_code: str
+            サービスエリアコード
+        service_area_name: str
+            サービスエリア名
+        large_area_code: str
+            大エリアコード
+        large_area_name: str
+            大エリア名
+        middle_area_code: str
+            中エリアコード
+        middle_area_name: str
+            中エリア名
+        small_area_code: str
+            小エリアコード
+        small_area_name: str
+            小エリア名
+    ids: list
+        飲食店IDリスト
+    """
+    dynamodb = boto3.client("dynamodb")
+
+    # 更新データの作成
+    update_datas = []
+    area_categories = ["large_service", "service", "large", "middle", "small"]
+    for ac in area_categories:
+        code_key = f"{ac}_area_code"
+        name_key = f"{ac}_area_name"
+        for id in ids:
+            update_datas.append(
+                {
+                    "PutRequest": {
+                        "Item": {
+                            "area_category": {"S": ac},
+                            "code_restaurant_id": {"S": f"{event[code_key]}#{id}"},
+                            "restaurant_id": {"S": id},
+                            "code": {"S": event[code_key]},
+                            "name": {"S": event[name_key]},
+                        }
+                    }
+                }
+            )
+
+    # DynamoDBの一括更新
+    dynamodb.batch_write_item(
+        RequestItems={os.environ["NAME_DYNAMODB_RESTAURANTS_AREAS"]: update_datas}
+    )

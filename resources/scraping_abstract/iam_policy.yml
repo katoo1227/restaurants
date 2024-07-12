@@ -8,11 +8,6 @@ IamPolicyScrapingAbstract:
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
-                # - Effect: "Allow"
-                #   Action:
-                #       - "ssm:GetParameter"
-                #   Resource:
-                #       - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/restaurants/api_key/hotpepper"
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
@@ -21,9 +16,14 @@ IamPolicyScrapingAbstract:
                   Action:
                       - "scheduler:CreateSchedule"
                   Resource: "*"
-                # - Effect: "Allow"
-                #   Action:
-                #       - "iam:PassRole"
-                #   Resource: !GetAtt "IamRoleInvokeRegisterTaskScrapingAbstractSmallAreas.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:BatchGetItem"
+                      - "dynamodb:BatchWriteItem"
+                  Resource: !GetAtt "DynamodbRestaurants.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:BatchWriteItem"
+                  Resource: !GetAtt "DynamodbRestaurantsAreas.Arn"
         Roles:
             - !Ref "IamRoleScrapingAbstract"
