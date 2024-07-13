@@ -1,0 +1,16 @@
+IamPolicyInvokeScrapingAbstract:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsInvokeScrapingAbstractProd"
+            - "RestaurantsInvokeScrapingAbstractDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource: !GetAtt "LambdaScrapingAbstract.Arn"
+        Roles:
+            - !Ref "IamRoleInvokeScrapingAbstract"

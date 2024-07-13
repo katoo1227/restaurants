@@ -30,6 +30,7 @@ base_path="$(pwd)/template_base.yml"
 # 完成後のテンプレートパス
 yml_path="$(pwd)/template.yml"
 
+# 「$file: ~~」をテンプレートにコピー
 yq '(.. | select(has("$file"))) |= load(.$file) | .Resources = (.Resources[] as $item ireduce ({}; . * $item))' "$base_path" > "$yml_path"
 
 # ビルドとデプロイ

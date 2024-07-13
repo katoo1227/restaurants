@@ -1,0 +1,64 @@
+LambdaRegisterSchedules:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/register_schedules/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsRegisterSchedulesProd"
+            - "RestaurantsRegisterSchedulesDev"
+        Role: !GetAtt "IamRoleRegisterSchedules.Arn"
+        Runtime: "python3.10"
+        Environment:
+            Variables:
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_IAM_ROLE_INVOKE_REGISTER_TASKS_TMP_SCRAPING_ABSTRACT_PAGES: !GetAtt "IamRoleInvokeRegisterTasksTmpScrapingAbstractPages.Arn"
+                ARN_IAM_ROLE_INVOKE_SCRAPING_ABSTRACT: !GetAtt "IamRoleInvokeScrapingAbstract.Arn"
+                ARN_IAM_ROLE_INVOKE_SCRAPING_DETAIL: !GetAtt "IamRoleInvokeScrapingDetail.Arn"
+                NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
+                NAME_SCHEDULE_GROUP: !Ref "EventBridgeScheduleGroup"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+        Events:
+            EventBridgeScheduleLambdaRegisterSchedulesScrapingAbstractPages:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(5 0 ? * SUN *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "RestaurantsLambdaRegisterSchedulesScrapingAbstractPagesProd"
+                        - "RestaurantsLambdaRegisterSchedulesScrapingAbstractPagesDev"
+                    RoleArn: !GetAtt "IamRoleInvokeRegisterSchedules.Arn"
+                    Input: '{"kind": "RegisterTasksTmpScrapingAbstractPages"}'
+            EventBridgeScheduleLambdaRegisterSchedulesScrapingAbstract:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 0 ? * MON *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "RestaurantsLambdaRegisterSchedulesScrapingAbstractProd"
+                        - "RestaurantsLambdaRegisterSchedulesScrapingAbstractDev"
+                    RoleArn: !GetAtt "IamRoleInvokeRegisterSchedules.Arn"
+                    Input: '{"kind": "ScrapingAbstract"}'
+
+            EventBridgeScheduleLambdaRegisterSchedulesScrapingDetail:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 0 ? * TUE *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "RestaurantsLambdaRegisterSchedulesScrapingDetailProd"
+                        - "RestaurantsLambdaRegisterSchedulesScrapingDetailDev"
+                    RoleArn: !GetAtt "IamRoleInvokeRegisterSchedules.Arn"
+                    Input: '{"kind": "ScrapingDetail"}'

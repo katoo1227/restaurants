@@ -79,6 +79,9 @@ outputs=$(sam list stack-outputs --stack-name $stack_name --output json)
 # LambdaLineNotifyのテストイベントの設定
 set_test_events "LambdaLineNotify" "ArnLambdaLineNotify"
 
+# RegisterSchedulesのテストイベントの設定
+set_test_events "LambdaRegisterSchedules" "ArnLambdaRegisterSchedules"
+
 # LambdaRegisterTasksTmpScrapingAbstractSmallAreasのテストイベントの設定
 set_test_events "LambdaRegisterTasksTmpScrapingAbstractSmallAreas" "ArnLambdaRegisterTasksTmpScrapingAbstractSmallAreas"
 
@@ -86,4 +89,7 @@ set_test_events "LambdaRegisterTasksTmpScrapingAbstractSmallAreas" "ArnLambdaReg
 set_test_events "LambdaRegisterTasksTmpScrapingAbstractPages" "ArnLambdaRegisterTasksTmpScrapingAbstractPages"
 
 # RegisterTasksTmpScrapingAbstractのテストイベントの設定
-set_test_events "LambdaRegisterTasksTmpScrapingAbstract" "ArnRegisterTasksTmpScrapingAbstract"
+set_test_events "LambdaScrapingAbstract" "ArnScrapingAbstract"
+
+# ScrapingDetailのテストイベントの設定
+set_test_events "LambdaScrapingDetail" "ArnScrapingDetail"

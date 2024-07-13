@@ -129,30 +129,25 @@ def register_tasks_tmp(event: dict, page_num: int) -> None:
     # paramsカラムの共通の値
     params_common = {}
     for key in ["large_service", "service", "large", "middle", "small"]:
-        params_common[f"{key}_area__code"] = {"S": event[f"{key}_area_code"]}
+        params_common[f"{key}_area_code"] = {"S": event[f"{key}_area_code"]}
         params_common[f"{key}_area_name"] = {"S": event[f"{key}_area_name"]}
 
     # 追加データの作成
-    put_datas = []
-    for i in range(1, page_num + 1):
-        # paramsカラムの値
-        params = params_common | {"page_num": {"N": str(i)}}
-
-        # 追加
-        put_datas.append(
-            {
-                "PutRequest": {
-                    "Item": {
-                        "kind": {"S": "ScrapingAbstract"},
-                        "params_id": {"S": f"{event['small_area_code']}_{i}"},
-                        "exec_arn": {"S": os.environ["ARN_LAMBDA_SCRAPING_ABSTRACT"]},
-                        "params": {"M": params}
-                    }
+    put_requests = [
+        {
+            "PutRequest": {
+                "Item": {
+                    "kind": {"S": "ScrapingAbstract"},
+                    "params_id": {"S": f"{event['small_area_code']}_{i}"},
+                    "exec_arn": {"S": os.environ["ARN_LAMBDA_SCRAPING_ABSTRACT"]},
+                    "params": {"M": params_common | {"page_num": {"N": str(i)}}},
                 }
             }
-        )
+        }
+        for i in range(1, page_num + 1)
+    ]
 
     # DynamoDBへの追加
     dynamodb.batch_write_item(
-        RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS_TMP"]: put_datas}
+        RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS_TMP"]: put_requests}
     )
