@@ -1,14 +1,14 @@
-IamRoleInvokeScrapingAbstract:
+IamRoleScrapingDetail:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeScrapingAbstractProd"
-            - "RestaurantsInvokeScrapingAbstractDev"
+            - "RestaurantsScrapingDetailProd"
+            - "RestaurantsScrapingDetailDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Principal:
-                      Service: "scheduler.amazonaws.com"
+                      Service: "lambda.amazonaws.com"
                   Action: "sts:AssumeRole"

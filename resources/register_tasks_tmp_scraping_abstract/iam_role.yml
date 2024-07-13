@@ -1,10 +1,10 @@
-IamRoleScrapingAbstract:
+IamRoleRegisterTasksTmpScrapingAbstract:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsScrapingAbstractProd"
-            - "RestaurantsScrapingAbstractDev"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractProd"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:

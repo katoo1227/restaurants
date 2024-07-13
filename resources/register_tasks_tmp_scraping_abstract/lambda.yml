@@ -1,21 +1,22 @@
-LambdaScrapingAbstract:
+LambdaRegisterTasksTmpScrapingAbstract:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/scraping_abstract/"
+        CodeUri: "./lambda_functions/register_tasks_tmp_scraping_abstract/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsScrapingAbstractProd"
-            - "RestaurantsScrapingAbstractDev"
-        Role: !GetAtt "IamRoleScrapingAbstract.Arn"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractProd"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractDev"
+        Role: !GetAtt "IamRoleRegisterTasksTmpScrapingAbstract.Arn"
         Runtime: "python3.10"
         Layers:
             - !Ref "LambdaLayerCheckAreaCodeNames"
         Environment:
             Variables:
                 ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_SCRAPING_DETAIL: !GetAtt "LambdaScrapingDetail.Arn"
                 NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
                 NAME_DYNAMODB_RESTAURANTS_AREAS: !Ref "DynamodbRestaurantsAreas"
-                SCHEDULE_GROUP_NAME: !Ref "EventBridgeScheduleGroup"
+                NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"

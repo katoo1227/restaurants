@@ -37,14 +37,15 @@ Resources:
     - $file: resources/register_tasks_tmp_scraping_abstract_pages/iam_role.yml
     - $file: resources/register_tasks_tmp_scraping_abstract_pages/iam_policy.yml
 
-    # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/invoke_scraping_abstract/iam_role.yml
-    - $file: resources/invoke_scraping_abstract/iam_policy.yml
-
     # Lambda - 概要情報スクレイピング
-    - $file: resources/scraping_abstract/lambda.yml
-    - $file: resources/scraping_abstract/iam_role.yml
-    - $file: resources/scraping_abstract/iam_policy.yml
+    - $file: resources/register_tasks_tmp_scraping_abstract/lambda.yml
+    - $file: resources/register_tasks_tmp_scraping_abstract/iam_role.yml
+    - $file: resources/register_tasks_tmp_scraping_abstract/iam_policy.yml
+
+    # Lambda - 詳細情報スクレイピング
+    - $file: resources/scraping_detail/lambda.yml
+    - $file: resources/scraping_detail/iam_role.yml
+    # - $file: resources/scraping_detail/iam_policy.yml
 
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
@@ -71,7 +72,7 @@ Outputs:
             Name: "ARN-LambdaRegisterTasksTmpScrapingAbstractPages"
 
     # 概要情報スクレイピングLambdaのARN
-    ArnLambdaScrapingAbstract:
-        Value: !GetAtt "LambdaScrapingAbstract.Arn"
+    ArnRegisterTasksTmpScrapingAbstract:
+        Value: !GetAtt "LambdaRegisterTasksTmpScrapingAbstract.Arn"
         Export:
-            Name: "ARN-LambdaScrapingAbstract"
+            Name: "ARN-RegisterTasksTmpScrapingAbstract"

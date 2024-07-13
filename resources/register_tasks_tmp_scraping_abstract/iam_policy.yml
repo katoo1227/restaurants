@@ -1,10 +1,10 @@
-IamPolicyScrapingAbstract:
+IamPolicyRegisterTasksTmpScrapingAbstract:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsScrapingAbstractProd"
-            - "RestaurantsScrapingAbstractDev"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractProd"
+            - "RestaurantsRegisterTasksTmpScrapingAbstractDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -14,10 +14,6 @@ IamPolicyScrapingAbstract:
                   Resource: !GetAtt "LambdaLineNotify.Arn"
                 - Effect: "Allow"
                   Action:
-                      - "scheduler:CreateSchedule"
-                  Resource: "*"
-                - Effect: "Allow"
-                  Action:
                       - "dynamodb:BatchGetItem"
                       - "dynamodb:BatchWriteItem"
                   Resource: !GetAtt "DynamodbRestaurants.Arn"
@@ -25,5 +21,9 @@ IamPolicyScrapingAbstract:
                   Action:
                       - "dynamodb:BatchWriteItem"
                   Resource: !GetAtt "DynamodbRestaurantsAreas.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:BatchWriteItem"
+                  Resource: !GetAtt "DynamodbRestaurantsTasksTmp.Arn"
         Roles:
-            - !Ref "IamRoleScrapingAbstract"
+            - !Ref "IamRoleRegisterTasksTmpScrapingAbstract"

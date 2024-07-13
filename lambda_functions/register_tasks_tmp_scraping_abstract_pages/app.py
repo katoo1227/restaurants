@@ -126,15 +126,14 @@ def register_tasks_tmp(event: dict, page_num: int) -> None:
     """
     dynamodb = boto3.client("dynamodb")
 
-    # 追加データの作成
-    put_datas = []
-
     # paramsカラムの共通の値
     params_common = {}
     for key in ["large_service", "service", "large", "middle", "small"]:
         params_common[f"{key}_area__code"] = {"S": event[f"{key}_area_code"]}
         params_common[f"{key}_area_name"] = {"S": event[f"{key}_area_name"]}
 
+    # 追加データの作成
+    put_datas = []
     for i in range(1, page_num + 1):
         # paramsカラムの値
         params = params_common | {"page_num": {"N": str(i)}}
@@ -157,27 +156,3 @@ def register_tasks_tmp(event: dict, page_num: int) -> None:
     dynamodb.batch_write_item(
         RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS_TMP"]: put_datas}
     )
-
-    # client = boto3.client("scheduler")
-
-    # # 03:00から1分ずつずらしながらページ数分のタスク登録
-    # current_date = datetime.now(pytz.timezone("Asia/Tokyo")).date()
-    # am3 = datetime.combine(current_date, time(3, 0))
-    # for i in range(1, page_num + 1):
-    #     jst = am3 + timedelta(minutes=i)
-    #     client.create_schedule(
-    #         ActionAfterCompletion="DELETE",
-    #         ClientToken="string",
-    #         Name=f"ScrapingAbstract_{event['small_area_code']}_page{i}",
-    #         GroupName=os.environ["SCHEDULE_GROUP_NAME"],
-    #         ScheduleExpression=f"cron({jst.minute} {jst.hour} {jst.day} {jst.month} ? {jst.year})",
-    #         ScheduleExpressionTimezone="Asia/Tokyo",
-    #         FlexibleTimeWindow={"Mode": "OFF"},
-    #         State="ENABLED",
-    #         Target={
-    #             "Arn": os.environ["ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRACT_PAGES"],
-    #             "Input": json.dumps(event | {"page_num": i}),
-    #             # EventBridgeに付与するIAMロール
-    #             "RoleArn": os.environ["ARN_IAM_ROLE_INVOKE_SCRAPING_ABSTRACT"],
-    #         },
-    #     )

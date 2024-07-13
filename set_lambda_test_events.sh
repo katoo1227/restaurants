@@ -85,5 +85,5 @@ set_test_events "LambdaRegisterTasksTmpScrapingAbstractSmallAreas" "ArnLambdaReg
 # LambdaRegisterTasksTmpScrapingAbstractPagesのテストイベントの設定
 set_test_events "LambdaRegisterTasksTmpScrapingAbstractPages" "ArnLambdaRegisterTasksTmpScrapingAbstractPages"
 
-# LambdaScrapingAbstractのテストイベントの設定
-set_test_events "LambdaScrapingAbstract" "ArnLambdaScrapingAbstract"
+# RegisterTasksTmpScrapingAbstractのテストイベントの設定
+set_test_events "LambdaRegisterTasksTmpScrapingAbstract" "ArnRegisterTasksTmpScrapingAbstract"
