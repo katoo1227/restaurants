@@ -1,10 +1,10 @@
-IamPolicyRegisterTasksTmpScrapingAbstract:
+IamPolicyScrapingDetail:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractDev"
+            - "RestaurantsRegisterTasksTmpScrapingDetailProd"
+            - "RestaurantsRegisterTasksTmpScrapingDetailDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -14,16 +14,8 @@ IamPolicyRegisterTasksTmpScrapingAbstract:
                   Resource: !GetAtt "LambdaLineNotify.Arn"
                 - Effect: "Allow"
                   Action:
-                      - "dynamodb:BatchGetItem"
-                      - "dynamodb:BatchWriteItem"
+                      - "dynamodb:GetItem"
+                      - "dynamodb:UpdateItem"
                   Resource: !GetAtt "DynamodbRestaurants.Arn"
-                - Effect: "Allow"
-                  Action:
-                      - "dynamodb:BatchWriteItem"
-                  Resource: !GetAtt "DynamodbRestaurantsAreas.Arn"
-                - Effect: "Allow"
-                  Action:
-                      - "dynamodb:BatchWriteItem"
-                  Resource: !GetAtt "DynamodbRestaurantsTasksTmp.Arn"
         Roles:
-            - !Ref "IamRoleRegisterTasksTmpScrapingAbstract"
+            - !Ref "IamRoleScrapingDetail"

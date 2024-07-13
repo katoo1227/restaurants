@@ -24,6 +24,9 @@ IamPolicyRegisterSchedules:
                 - Effect: "Allow"
                   Action:
                       - "iam:PassRole"
-                  Resource: !GetAtt "IamRoleInvokeRegisterTasksTmpScrapingAbstractPages.Arn"
+                  Resource:
+                      - !GetAtt "IamRoleInvokeRegisterTasksTmpScrapingAbstractPages.Arn"
+                      - !GetAtt "IamRoleInvokeScrapingAbstract.Arn"
+                      - !GetAtt "IamRoleInvokeScrapingDetail.Arn"
         Roles:
             - !Ref "IamRoleRegisterSchedules"

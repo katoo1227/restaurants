@@ -1,6 +1,8 @@
 import json
 import os
 import boto3
+from boto3.dynamodb.types import TypeDeserializer
+from decimal import Decimal
 import pytz
 from datetime import datetime, time, timedelta
 from dataclasses import dataclass
@@ -126,12 +128,39 @@ def register_schedules(kind: str, tasks: list[TaskTmp]) -> None:
     current_date = datetime.now(pytz.timezone("Asia/Tokyo")).date()
     if kind == "RegisterTasksTmpScrapingAbstractPages":
         start_datetime = datetime.combine(current_date, time(1, 0))
+        role_arn = os.environ[
+            "ARN_IAM_ROLE_INVOKE_REGISTER_TASKS_TMP_SCRAPING_ABSTRACT_PAGES"
+        ]
+    elif kind == "ScrapingAbstract":
+        start_datetime = datetime.combine(current_date, time(0, 10))
+        role_arn = os.environ["ARN_IAM_ROLE_INVOKE_SCRAPING_ABSTRACT"]
+    elif kind == "ScrapingDetail":
+        start_datetime = datetime.combine(current_date, time(0, 10))
+        role_arn = os.environ["ARN_IAM_ROLE_INVOKE_SCRAPING_DETAIL"]
     else:
         raise Exception(f"想定外のkindが渡されました。{kind}")
 
+    # dynamoDBデシリアライザー
+    td = TypeDeserializer()
+
     # 1分ずつずらしながらスケジュール登録
     for i, task in enumerate(tasks):
+        # スケジュール実行日時
         jst = start_datetime + timedelta(minutes=i)
+
+        # イベントパラメータを扱いやすいjsonに変換
+        params = {}
+        for key, value in task.params.items():
+            v = td.deserialize(value)
+            # 数値の場合はDecimal型になるので、intかfloatに変換
+            if isinstance(v, Decimal):
+                if int(v) == v:
+                    v = int(v)
+                else:
+                    v = float(v)
+            params[key] = v
+
+        # スケジュールの作成
         scheduler.create_schedule(
             ActionAfterCompletion="DELETE",
             ClientToken="string",
@@ -143,10 +172,8 @@ def register_schedules(kind: str, tasks: list[TaskTmp]) -> None:
             State="ENABLED",
             Target={
                 "Arn": task.exec_arn,
-                "Input": json.dumps(task.params),
-                "RoleArn": os.environ[
-                    "ARN_IAM_ROLE_INVOKE_REGISTER_TASKS_TMP_SCRAPING_ABSTRACT_PAGES"
-                ],
+                "Input": json.dumps(params),
+                "RoleArn": role_arn,
             },
         )
 

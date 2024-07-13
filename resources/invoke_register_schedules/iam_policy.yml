@@ -13,7 +13,7 @@ IamPolicyInvokeRegisterTasksTmpScrapingAbstractSmallAreas:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaRegisterTasksTmpScrapingAbstractPages.Arn"
-                      - !GetAtt "LambdaRegisterTasksTmpScrapingAbstract.Arn"
+                      - !GetAtt "LambdaScrapingAbstract.Arn"
                       - !GetAtt "LambdaScrapingDetail.Arn"
         Roles:
             - !Ref "IamRoleInvokeRegisterSchedules"
