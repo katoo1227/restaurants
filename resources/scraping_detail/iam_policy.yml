@@ -15,7 +15,7 @@ IamPolicyScrapingDetail:
                 - Effect: "Allow"
                   Action:
                       - "dynamodb:GetItem"
-                      - "dynamodb:UpdateItem"
+                      - "dynamodb:PutItem"
                   Resource: !GetAtt "DynamodbRestaurants.Arn"
         Roles:
             - !Ref "IamRoleScrapingDetail"

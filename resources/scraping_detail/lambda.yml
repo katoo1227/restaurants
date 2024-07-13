@@ -8,12 +8,10 @@ LambdaScrapingDetail:
             - "RestaurantsScrapingDetailDev"
         Role: !GetAtt "IamRoleScrapingDetail.Arn"
         Runtime: "python3.10"
-        # Environment:
-        #     Variables:
-                # ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
-                # NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
-                # NAME_DYNAMODB_RESTAURANTS_AREAS: !Ref "DynamodbRestaurantsAreas"
-                # NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
+        Environment:
+            Variables:
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"

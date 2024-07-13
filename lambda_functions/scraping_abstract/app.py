@@ -85,7 +85,7 @@ def get_restaurant_ids(
     service_area_code: str, middle_area_code: str, small_area_code: str, page_num: int
 ) -> list[str]:
     """
-    概要情報のスクレピング
+    概要情報を取得
 
     Parameters
     ----------
