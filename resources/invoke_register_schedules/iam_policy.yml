@@ -1,4 +1,4 @@
-IamPolicyInvokeRegisterTasksTmpScrapingAbstractSmallAreas:
+IamPolicyInvokeRegisterSchedules:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
@@ -12,8 +12,6 @@ IamPolicyInvokeRegisterTasksTmpScrapingAbstractSmallAreas:
                   Action:
                       - "lambda:InvokeFunction"
                   Resource:
-                      - !GetAtt "LambdaRegisterTasksTmpScrapingAbstractPages.Arn"
-                      - !GetAtt "LambdaScrapingAbstract.Arn"
-                      - !GetAtt "LambdaScrapingDetail.Arn"
+                      - !GetAtt "LambdaRegisterSchedules.Arn"
         Roles:
             - !Ref "IamRoleInvokeRegisterSchedules"
