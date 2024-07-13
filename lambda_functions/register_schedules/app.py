@@ -19,24 +19,22 @@ class TaskTmp:
 
 def lambda_handler(event, context):
 
-    # Lambdaクライアント
-    lambda_client = boto3.client("lambda")
-
-    # EventBridge Schedulerクライアント
-    scheduler_client = boto3.client("scheduler")
-
     try:
         # イベントパラメータのチェック
         check_event(event)
 
         # 一時テーブルから該当タスクを取得
         tasks = get_tasks_from_tmp(event["kind"])
-        print(tasks)
 
         # スケジュール登録
         register_schedules(event["kind"], tasks)
 
+        # 一時テーブルから該当タスクを削除
+        delete_tasks_to_tmp(event["kind"], tasks)
+
     except Exception as e:
+        # Lambdaクライアント
+        lambda_client = boto3.client("lambda")
         msg = f"""
 {str(e)}
 
@@ -108,7 +106,8 @@ def get_tasks_from_tmp(kind: str) -> list[TaskTmp]:
         for i in res["Items"]
     ]
 
-def register_schedules(kind: str, tasks) -> None:
+
+def register_schedules(kind: str, tasks: list[TaskTmp]) -> None:
     """
     スケジュールの登録
 
@@ -116,7 +115,7 @@ def register_schedules(kind: str, tasks) -> None:
     ----------
     kind: str
         スケジュールの種類
-    tasks: list
+    tasks: list[TaskTmp]
         タスク一覧
     """
 
@@ -145,6 +144,40 @@ def register_schedules(kind: str, tasks) -> None:
             Target={
                 "Arn": task.exec_arn,
                 "Input": json.dumps(task.params),
-                "RoleArn": os.environ["ARN_IAM_ROLE_INVOKE_REGISTER_TASKS_TMP_SCRAPING_ABSTRACT_PAGES"],
+                "RoleArn": os.environ[
+                    "ARN_IAM_ROLE_INVOKE_REGISTER_TASKS_TMP_SCRAPING_ABSTRACT_PAGES"
+                ],
             },
+        )
+
+
+def delete_tasks_to_tmp(kind: str, tasks: list[TaskTmp]) -> None:
+    """
+    一時テーブルからタスクを削除
+
+    Parameters
+    ----------
+    kind: str
+        タスクの種類
+    tasks: list[TaskTmp]
+        タスクリスト
+    """
+    dynamodb = boto3.client("dynamodb")
+
+    # 削除データの作成
+    delete_requests = [
+        {
+            "DeleteRequest": {
+                "Key": {"kind": {"S": kind}, "params_id": {"S": t.params_id}}
+            }
+        }
+        for t in tasks
+    ]
+
+    # 削除リクエストを分割してバッチ処理
+    # batch_write_itemは一度に25件までしか削除できないため
+    for i in range(0, len(delete_requests), 25):
+        batch = delete_requests[i : i + 25]
+        dynamodb.batch_write_item(
+            RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS_TMP"]: batch}
         )
