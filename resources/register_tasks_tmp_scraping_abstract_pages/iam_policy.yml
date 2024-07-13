@@ -10,11 +10,6 @@ IamPolicyRegisterTasksTmpScrapingAbstractPages:
             Statement:
                 - Effect: "Allow"
                   Action:
-                      - "ssm:GetParameter"
-                  Resource:
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/restaurants/api_key/hotpepper"
-                - Effect: "Allow"
-                  Action:
                       - "lambda:InvokeFunction"
                   Resource: !GetAtt "LambdaLineNotify.Arn"
                 - Effect: "Allow"
