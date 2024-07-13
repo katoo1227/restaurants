@@ -12,6 +12,9 @@ Conditions:
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
 
 Resources:
+    # S3エラーログ用バケット
+    - $file: resources/s3/error_logs.yml
+
     # Lambdaレイヤー - check_area_code_names
     - $file: resources/lambda_layers/check_area_code_names.yml
 

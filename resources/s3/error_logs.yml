@@ -1,0 +1,13 @@
+ErrorLogs:
+    Type: "AWS::S3::Bucket"
+    Properties:
+        BucketName: !If
+            - "IsProd"
+            - "katoo1227-restaurants-error-logs-prod"
+            - "katoo1227-restaurants-error-logs-dev"
+        BucketEncryption:
+            ServerSideEncryptionConfiguration:
+                - ServerSideEncryptionByDefault:
+                      SSEAlgorithm: 'aws:kms'
+                      KMSMasterKeyID: 'alias/aws/s3'
+                  BucketKeyEnabled: true
