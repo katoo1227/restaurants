@@ -1,10 +1,10 @@
-IamRoleScrapingAbstract:
+IamRoleScrapingDetail:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsScrapingAbstractProd"
-            - "RestaurantsScrapingAbstractDev"
+            - "RestaurantsScrapingDetailProd"
+            - "RestaurantsScrapingDetailDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:

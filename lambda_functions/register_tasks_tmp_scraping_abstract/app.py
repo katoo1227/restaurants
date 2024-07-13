@@ -35,6 +35,9 @@ def lambda_handler(event, context):
             restaurant_ids,
         )
 
+        # restaurants_tasks_tmpへの登録
+        register_tasks_tmp(restaurant_ids)
+
     except Exception as e:
         msg = f"""
 {str(e)}
@@ -176,7 +179,7 @@ def register_restaurants(restaurant_ids: list[str]) -> None:
         dynamodb.batch_write_item(RequestItems={table_name: add_datas})
 
 
-def register_restaurants_areas(event: dict, ids: list[str]):
+def register_restaurants_areas(event: dict, restaurant_ids: list[str]):
     """
     restaurants_areasテーブルの登録
 
@@ -203,33 +206,63 @@ def register_restaurants_areas(event: dict, ids: list[str]):
             小エリアコード
         small_area_name: str
             小エリア名
-    ids: list
+    restaurant_ids: list
         飲食店IDリスト
     """
     dynamodb = boto3.client("dynamodb")
 
+    # 1回につき100レコードを最大とするために分割する
+    # 数が多いとバリデーションエラーとなる模様
+    restaurant_ids_list = [
+        restaurant_ids[i : i + 5] for i in range(0, len(restaurant_ids), 5)
+    ]
+
     # 更新データの作成
-    update_datas = []
     area_categories = ["large_service", "service", "large", "middle", "small"]
     for ac in area_categories:
         code_key = f"{ac}_area_code"
         name_key = f"{ac}_area_name"
-        for id in ids:
-            update_datas.append(
-                {
-                    "PutRequest": {
-                        "Item": {
-                            "area_category": {"S": ac},
-                            "code_restaurant_id": {"S": f"{event[code_key]}#{id}"},
-                            "restaurant_id": {"S": id},
-                            "code": {"S": event[code_key]},
-                            "name": {"S": event[name_key]},
-                        }
-                    }
+        update_datas = []
+        for ids in restaurant_ids_list:
+            for id in ids:
+                item = {
+                    "area_category": {"S": ac},
+                    "code_restaurant_id": {"S": f"{event[code_key]}#{id}"},
+                    "restaurant_id": {"S": id},
+                    "code": {"S": event[code_key]},
+                    "name": {"S": event[name_key]},
                 }
-            )
+                update_datas.append({"PutRequest": {"Item": item}})
 
-    # DynamoDBの一括更新
+        # DynamoDBの一括更新
+        dynamodb.batch_write_item(
+            RequestItems={os.environ["NAME_DYNAMODB_RESTAURANTS_AREAS"]: update_datas}
+        )
+
+
+def register_tasks_tmp(ids: list[str]) -> None:
+    """
+    restaurants_tasks_tmpへの登録
+
+    Parameters
+    ----------
+    ids: list[str]
+        飲食店IDリスト
+    """
+    dynamodb = boto3.client("dynamodb")
+
+    # 追加データの作成
+    put_datas = []
+    for id in ids:
+        item = {
+            "kind": {"S": "ScrapingDetail"},
+            "params_id": {"S": id},
+            "exec_arn": {"S": os.environ["ARN_LAMBDA_SCRAPING_DETAIL"]},
+            "params": {"M": {"id": {"S": id}}},
+        }
+        put_datas.append({"PutRequest": {"Item": item}})
+
+    # DynamoDBへの追加
     dynamodb.batch_write_item(
-        RequestItems={os.environ["NAME_DYNAMODB_RESTAURANTS_AREAS"]: update_datas}
+        RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS_TMP"]: put_datas}
     )

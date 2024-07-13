@@ -4,8 +4,6 @@ import json
 import requests
 import urllib.parse
 import re
-from datetime import datetime, time, timedelta
-import pytz
 
 
 def lambda_handler(event, context):
@@ -24,7 +22,7 @@ def lambda_handler(event, context):
         small_areas = get_small_areas(event["middle_area_code"])
 
         # 小エリアごとのタスクスケジュールを登録
-        register_tasks(small_areas)
+        register_tasks_tmp(small_areas)
 
     except Exception as e:
         msg = f"""
@@ -88,13 +86,13 @@ def get_small_areas(code: str) -> list:
             "service_area_code": a["service_area"]["code"],
             "service_area_name": a["service_area"]["name"],
             "large_service_area_code": a["large_service_area"]["code"],
-            "large_service_area_name": a["large_service_area"]["name"]
+            "large_service_area_name": a["large_service_area"]["name"],
         }
         for a in data["results"]["small_area"]
     ]
 
 
-def register_tasks(small_areas: list) -> None:
+def register_tasks_tmp(small_areas: list) -> None:
     """
     タスクを登録
 
@@ -102,38 +100,58 @@ def register_tasks(small_areas: list) -> None:
     ----------
     small_areas: list
         [
-            large_service_area_code: str 大サービスエリアコード
-            large_service_area_name: str 大サービスエリア名
-            service_area_code: str サービスエリア名
-            service_area_name: str サービスエリア名
-            large_area_code: str 大エリアコード
-            large_area_name: str 大エリア名
-            middle_area_code: str 中エリアコード
-            middle_area_name: str 中エリア名
-            small_area_code: str 小エリアコード
-            small_area_name: str 小エリア名
-            page_num: str 何ページ目か（stringで送る）
+            large_service_area_code: str
+                大サービスエリアコード
+            large_service_area_name: str
+                大サービスエリア名
+            service_area_code: str
+                サービスエリア名
+            service_area_name: str
+                サービスエリア名
+            large_area_code: str
+                大エリアコード
+            large_area_name: str
+                大エリア名
+            middle_area_code: str
+                中エリアコード
+            middle_area_name: str
+                中エリア名
+            small_area_code: str
+                小エリアコード
+            small_area_name: str
+                小エリア名
         ]
     """
-    client = boto3.client("scheduler")
+    dynamodb = boto3.client("dynamodb")
 
-    # 01:00から1分ずつずらしながら小エリア分のタスク登録
-    current_date = datetime.now(pytz.timezone("Asia/Tokyo")).date()
-    am1 = datetime.combine(current_date, time(1, 0))
-    for i, area in enumerate(small_areas):
-        jst = am1 + timedelta(minutes=i)
-        client.create_schedule(
-            ActionAfterCompletion="DELETE",
-            ClientToken="string",
-            Name=f"RegisterTaskScrapingAbstractPages_{area['small_area_code']}",
-            GroupName=os.environ["SCHEDULE_GROUP_NAME"],
-            ScheduleExpression=f"cron({jst.minute} {jst.hour} {jst.day} {jst.month} ? {jst.year})",
-            ScheduleExpressionTimezone="Asia/Tokyo",
-            FlexibleTimeWindow={"Mode": "OFF"},
-            State="ENABLED",
-            Target={
-                "Arn": os.environ["ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRACT_PAGES"],
-                "Input": json.dumps(area),
-                "RoleArn": os.environ["ARN_INVOKE_REGISTER_TASK_SCRAPING_ABSTRACT_SMALL_AREAS"],
-            },
+    # 追加データの作成
+    put_datas = []
+    for a in small_areas:
+        # paramsカラムの値
+        params = {}
+        for key in ["large_service", "service", "large", "middle", "small"]:
+            params[f"{key}_area__code"] = {"S": a[f"{key}_area_code"]}
+            params[f"{key}_area_name"] = {"S": a[f"{key}_area_name"]}
+
+        # 追加
+        put_datas.append(
+            {
+                "PutRequest": {
+                    "Item": {
+                        "kind": {"S": "RegisterTasksTmpScrapingAbstractPages"},
+                        "params_id": {"S": a["small_area_code"]},
+                        "exec_arn": {
+                            "S": os.environ[
+                                "ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRAT_PAGES"
+                            ]
+                        },
+                        "params": {"M": params},
+                    }
+                }
+            }
         )
+
+    # DynamoDBへの追加
+    dynamodb.batch_write_item(
+        RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS_TMP"]: put_datas}
+    )

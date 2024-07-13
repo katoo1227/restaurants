@@ -1,10 +1,10 @@
-IamRoleInvokeRegisterTaskScrapingAbstractSmallAreas:
+IamRoleInvokeRegisterTasksTmpScrapingAbstractSmallAreas:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeRegisterTaskScrapingAbstractSmallAreasProd"
-            - "RestaurantsInvokeRegisterTaskScrapingAbstractSmallAreasDev"
+            - "RestaurantsInvokeRegisterTasksTmpScrapingAbstractSmallAreasProd"
+            - "RestaurantsInvokeRegisterTasksTmpScrapingAbstractSmallAreasDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:

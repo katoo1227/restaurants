@@ -1,0 +1,20 @@
+LambdaScrapingDetail:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/scraping_detail/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsScrapingDetailProd"
+            - "RestaurantsScrapingDetailDev"
+        Role: !GetAtt "IamRoleScrapingDetail.Arn"
+        Runtime: "python3.10"
+        # Environment:
+        #     Variables:
+                # ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                # NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
+                # NAME_DYNAMODB_RESTAURANTS_AREAS: !Ref "DynamodbRestaurantsAreas"
+                # NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
