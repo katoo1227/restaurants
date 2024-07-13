@@ -19,7 +19,7 @@ LambdaRegisterTasksTmpScrapingAbstractSmallAreas:
         Timeout: 30
 
         Events:
-            EventBridgeScheduleLambdaRegisterTaskScrapingAbstract:
+            EventBridgeScheduleLambdaRegisterTasksTmpScrapingAbstractSmallAreas:
                 Type: "ScheduleV2"
                 Properties:
                     ScheduleExpression: cron(0 0 ? * SUN *)

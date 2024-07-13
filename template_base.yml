@@ -23,6 +23,15 @@ Resources:
     - $file: resources/line_notify/iam_role.yml
     - $file: resources/line_notify/iam_policy.yml
 
+    # Lambda - スケジュール登録
+    - $file: resources/register_schedules/lambda.yml
+    - $file: resources/register_schedules/iam_role.yml
+    - $file: resources/register_schedules/iam_policy.yml
+
+    # EventBridge - スケジュール登録
+    - $file: resources/invoke_register_schedules/iam_role.yml
+    - $file: resources/invoke_register_schedules/iam_policy.yml
+
     # EventBridge - 概要情報スクレイピングタスクの登録（小エリアごと）
     - $file: resources/invoke_register_task_scraping_abstract_small_areas/iam_role.yml
     - $file: resources/invoke_register_task_scraping_abstract_small_areas/iam_policy.yml
@@ -31,6 +40,10 @@ Resources:
     - $file: resources/register_tasks_tmp_scraping_abstract_small_areas/lambda.yml
     - $file: resources/register_tasks_tmp_scraping_abstract_small_areas/iam_role.yml
     - $file: resources/register_tasks_tmp_scraping_abstract_small_areas/iam_policy.yml
+
+    # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
+    - $file: resources/invoke_register_task_scraping_abstract_pages/iam_role.yml
+    - $file: resources/invoke_register_task_scraping_abstract_pages/iam_policy.yml
 
     # Lambda - 概要情報スクレイピングタスクの登録（ページごと）
     - $file: resources/register_tasks_tmp_scraping_abstract_pages/lambda.yml
@@ -58,6 +71,12 @@ Outputs:
         Value: !GetAtt "LambdaLineNotify.Arn"
         Export:
             Name: "ARN-LambdaLineNotify"
+
+    # スケジュール登録LambdaのARN
+    ArnLambdaRegisterSchedules:
+        Value: !GetAtt "LambdaRegisterSchedules.Arn"
+        Export:
+            Name: "ARN-LambdaRegisterSchedule"
 
     # 概要情報スクレイピングタスクの登録（小エリアごと）LambdaのARN
     ArnLambdaRegisterTasksTmpScrapingAbstractSmallAreas:

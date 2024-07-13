@@ -130,7 +130,7 @@ def register_tasks_tmp(small_areas: list) -> None:
         # paramsカラムの値
         params = {}
         for key in ["large_service", "service", "large", "middle", "small"]:
-            params[f"{key}_area__code"] = {"S": a[f"{key}_area_code"]}
+            params[f"{key}_area_code"] = {"S": a[f"{key}_area_code"]}
             params[f"{key}_area_name"] = {"S": a[f"{key}_area_name"]}
 
         # 追加

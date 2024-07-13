@@ -1,0 +1,29 @@
+IamPolicyRegisterSchedules:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsRegisterSchedulesProd"
+            - "RestaurantsRegisterSchedulesDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource: !GetAtt "LambdaLineNotify.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:BatchWriteItem"
+                  Resource: !GetAtt "DynamodbRestaurantsTasksTmp.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "scheduler:CreateSchedule"
+                  Resource: "*"
+                - Effect: "Allow"
+                  Action:
+                      - "iam:PassRole"
+                  Resource: !GetAtt "IamRoleInvokeRegisterTasksTmpScrapingAbstractPages.Arn"
+        Roles:
+            - !Ref "IamRoleRegisterSchedules"

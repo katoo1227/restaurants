@@ -129,7 +129,7 @@ def register_tasks_tmp(event: dict, page_num: int) -> None:
     # paramsカラムの共通の値
     params_common = {}
     for key in ["large_service", "service", "large", "middle", "small"]:
-        params_common[f"{key}_area__code"] = {"S": event[f"{key}_area_code"]}
+        params_common[f"{key}_area_code"] = {"S": event[f"{key}_area_code"]}
         params_common[f"{key}_area_name"] = {"S": event[f"{key}_area_name"]}
 
     # 追加データの作成

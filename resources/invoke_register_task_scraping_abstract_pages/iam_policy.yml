@@ -1,0 +1,16 @@
+IamPolicyInvokeRegisterTasksTmpScrapingAbstractPages:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsInvokeRegisterTasksTmpScrapingAbstractPagesProd"
+            - "RestaurantsInvokeRegisterTasksTmpScrapingAbstractPagesDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource: !GetAtt "LambdaRegisterTasksTmpScrapingAbstractPages.Arn"
+        Roles:
+            - !Ref "IamRoleInvokeRegisterTasksTmpScrapingAbstractPages"
