@@ -3,13 +3,14 @@ import os
 import json
 import re
 import requests
+import urllib.parse
 from bs4 import BeautifulSoup
 from datetime import datetime
+from boto3.dynamodb.types import TypeDeserializer
+from decimal import Decimal
 
 
 def lambda_handler(event, context):
-    # Lambdaクライアント
-    lambda_client = boto3.client("lambda")
 
     try:
         # イベントパラメータのチェック
@@ -70,6 +71,10 @@ def get_detail_info(id: str) -> dict:
             サブジャンル
         address: str
             住所
+        latitude: float
+            緯度
+        longitude: float
+            経度
         open_hours: str
             営業時間
         close_days: str
@@ -81,6 +86,8 @@ def get_detail_info(id: str) -> dict:
         "genre": "",
         "sub_genre": "",
         "address": "",
+        "latitude": 0,
+        "longitude": 0,
         "open_hours": "",
         "close_days": "",
     }
@@ -178,6 +185,28 @@ def get_detail_info(id: str) -> dict:
             if item_name == "定休日":
                 result["close_days"] = td.decode_contents(formatter="html").strip()
 
+    # 緯度・経度
+    if result["address"] != "":
+        # Google Geocoding APIで住所から緯度・経度を取得
+        res = boto3.client("ssm").get_parameter(
+            Name=os.environ["NAME_PARAMETER_API_KEY_GOOGLE_GEOCODING"],
+            WithDecryption=True,
+        )
+        url_params = {"address": result["address"], "key": res["Parameter"]["Value"]}
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?{urllib.parse.urlencode(url_params)}"
+        response = requests.get(url)
+
+        # 正しく取得できていなければ例外を投げる
+        data = response.json()
+        try:
+            lat = data["results"][0]["geometry"]["location"]["lat"]
+            lng = data["results"][0]["geometry"]["location"]["lng"]
+        except KeyError:
+            raise Exception(f"緯度経度の取得に失敗。\n{id}\n{url}")
+
+        result["latitude"] = lat
+        result["longitude"] = lng
+
     return result
 
 
@@ -198,6 +227,10 @@ def update_restaurant(id: str, info: dict) -> None:
             サブジャンル
         address: str
             住所
+        latitude: float
+            緯度
+        longitude: float
+            経度
         open_hours: str
             営業時間
         close_days: str
@@ -210,26 +243,47 @@ def update_restaurant(id: str, info: dict) -> None:
     if "Item" not in res:
         raise Exception(f"飲食店データの取得に失敗。{id}のレコードが存在しない。")
 
-    # put対象かの判定
-    record = res["Item"]
-    if (
-        "name" not in record
-        or info["name"] != record["name"]
-        or "address" not in record
-        or info["address"] != record["address"]
-        or "open_hours" not in record
-        or info["open_hours"] != record["open_hours"]
-        or "close_days" not in record
-        or info["close_days"] != record["close_days"]
-    ):
+    # dynamoDBデシリアライザー
+    td = TypeDeserializer()
+
+    res_json = {}
+    for key, value in res["Item"].items():
+        v = td.deserialize(value)
+        # 数値の場合はDecimal型になるので、intかfloatに変換
+        if isinstance(v, Decimal):
+            if int(v) == v:
+                v = int(v)
+            else:
+                v = float(v)
+        res_json[key] = v
+
+    # put対象か
+    is_put = False
+    update_columns = [
+        "name",
+        "address",
+        "latitude",
+        "longitude",
+        "open_hours",
+        "close_days",
+    ]
+    for c in update_columns:
+        if c not in res_json or info[c] != res_json[c]:
+            is_put = True
+
+    if is_put:
         dynamodb.put_item(
             TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"],
             Item={
                 "id": {"S": id},
                 "name": {"S": info["name"]},
                 "address": {"S": info["address"]},
+                "latitude": {"N": str(info["latitude"])},
+                "longitude": {"N": str(info["longitude"])},
                 "open_hours": {"S": info["open_hours"]},
                 "close_days": {"S": info["close_days"]},
+                "is_notified": {"N": str(res_json["is_notified"])},
+                "createrd_at": {"S": res_json["created_at"]},
                 "updated_at": {"S": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
             },
         )
