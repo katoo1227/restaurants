@@ -175,9 +175,9 @@ def delete_tasks_to_tmp(kind: str, tasks: list[TaskTmp]) -> None:
     delete_requests = [
         {
             "DeleteRequest": {
-                "Key": {
-                    "kind": dynamodb_types.serialize(kind),
-                    "params_id": dynamodb_types.serialize(t.params_id)}
+                "Key": dynamodb_types.serialize_dict(
+                    {"kind": kind, "params_id": t.params_id}
+                ),
             }
         }
         for t in tasks

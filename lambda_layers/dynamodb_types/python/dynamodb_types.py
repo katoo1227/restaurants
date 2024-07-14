@@ -1,6 +1,31 @@
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
 from decimal import Decimal
 
+def serialize_dict(item: dict) -> dict:
+    """
+    辞書型のシリアライズ
+        例）
+        {
+            "aaa": "qwe",
+            "bbb": "asd"
+        }
+        ↓
+        {
+            "aaa": {"S": "qwe"},
+            "bbb": {"S": "asd"}
+        }
+
+    Parameters
+    ----------
+    items: dict
+        シリアライズしたいdict
+
+    Returns
+    -------
+    dict
+    """
+    return {k: serialize(v) for k, v in item.items()}
+
 
 def serialize(item: dict) -> dict:
     """

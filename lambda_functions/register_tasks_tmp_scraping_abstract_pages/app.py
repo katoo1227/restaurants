@@ -128,12 +128,14 @@ def register_tasks_tmp(event: dict, page_num: int) -> None:
     put_requests = [
         {
             "PutRequest": {
-                "Item": {
-                    "kind": dynamodb_types.serialize("ScrapingAbstract"),
-                    "params_id": dynamodb_types.serialize(f"{event['small_area_code']}_{i}"),
-                    "exec_arn": dynamodb_types.serialize(os.environ["ARN_LAMBDA_SCRAPING_ABSTRACT"]),
-                    "params": dynamodb_types.serialize(params_common | {"page_num": i}),
-                }
+                "Item": dynamodb_types.serialize_dict(
+                    {
+                        "kind": "ScrapingAbstract",
+                        "params_id": f"{event['small_area_code']}_{i}",
+                        "exec_arn": os.environ["ARN_LAMBDA_SCRAPING_ABSTRACT"],
+                        "params": params_common | {"page_num": i},
+                    }
+                )
             }
         }
         for i in range(1, page_num + 1)
