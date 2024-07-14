@@ -26,6 +26,11 @@ Resources:
     - $file: resources/line_notify/iam_role.yml
     - $file: resources/line_notify/iam_policy.yml
 
+    # Lambda - エラー共通処理
+    - $file: resources/error_common/lambda.yml
+    - $file: resources/error_common/iam_role.yml
+    - $file: resources/error_common/iam_policy.yml
+
     # Lambda - スケジュール登録
     - $file: resources/register_schedules/lambda.yml
     - $file: resources/register_schedules/iam_role.yml
@@ -82,6 +87,12 @@ Outputs:
         Value: !GetAtt "LambdaLineNotify.Arn"
         Export:
             Name: "ARN-LambdaLineNotify"
+
+    # エラー共通処理LambdaのARN
+    ArnLambdaErrorCommon:
+        Value: !GetAtt "LambdaErrorCommon.Arn"
+        Export:
+            Name: "ARN-LambdaErrorCommon"
 
     # スケジュール登録LambdaのARN
     ArnLambdaRegisterSchedules:

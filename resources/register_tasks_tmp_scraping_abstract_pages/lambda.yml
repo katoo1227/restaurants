@@ -12,7 +12,7 @@ LambdaRegisterTasksTmpScrapingAbstractPages:
             - !Ref "LambdaLayerCheckAreaCodeNames"
         Environment:
             Variables:
-                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
                 ARN_LAMBDA_SCRAPING_ABSTRACT: !GetAtt "LambdaScrapingAbstract.Arn"
                 NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
         Handler: "app.lambda_handler"
