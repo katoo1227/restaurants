@@ -17,5 +17,12 @@ IamPolicyScrapingDetail:
                       - "dynamodb:GetItem"
                       - "dynamodb:PutItem"
                   Resource: !GetAtt "DynamodbRestaurants.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "ssm:GetParameter"
+                  Resource: !If
+                      - "IsProd"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/google/geocoding/prod/key"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/google/geocoding/dev/key"
         Roles:
             - !Ref "IamRoleScrapingDetail"

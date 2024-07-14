@@ -8,9 +8,6 @@ import re
 
 def lambda_handler(event, context):
 
-    # Lambdaクライアント
-    lambda_client = boto3.client("lambda")
-
     try:
         # パラメータが不正なら終了
         if "middle_area_code" not in event or not re.match(

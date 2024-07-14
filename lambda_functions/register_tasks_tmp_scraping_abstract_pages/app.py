@@ -9,9 +9,6 @@ from check_area_code_names import check_area_code_names
 
 def lambda_handler(event, context):
 
-    # Lambdaクライアント
-    lambda_client = boto3.client("lambda")
-
     try:
         # イベントパラメータのチェック
         check_area_code_names(event)
