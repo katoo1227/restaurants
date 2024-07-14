@@ -85,13 +85,13 @@ set_test_events "LambdaErrorCommon" "ArnLambdaErrorCommon"
 # RegisterSchedulesのテストイベントの設定
 set_test_events "LambdaRegisterSchedules" "ArnLambdaRegisterSchedules"
 
-# LambdaRegisterTasksTmpScrapingAbstractSmallAreasのテストイベントの設定
-set_test_events "LambdaRegisterTasksTmpScrapingAbstractSmallAreas" "ArnLambdaRegisterTasksTmpScrapingAbstractSmallAreas"
+# LambdaRegisterSmallAreasのテストイベントの設定
+set_test_events "LambdaRegisterSmallAreas" "ArnLambdaRegisterSmallAreas"
 
-# LambdaRegisterTasksTmpScrapingAbstractPagesのテストイベントの設定
-set_test_events "LambdaRegisterTasksTmpScrapingAbstractPages" "ArnLambdaRegisterTasksTmpScrapingAbstractPages"
+# LambdaRegisterAbstractPagesのテストイベントの設定
+set_test_events "LambdaRegisterAbstractPages" "ArnLambdaRegisterAbstractPages"
 
-# RegisterTasksTmpScrapingAbstractのテストイベントの設定
+# ScrapingAbstractのテストイベントの設定
 set_test_events "LambdaScrapingAbstract" "ArnScrapingAbstract"
 
 # ScrapingDetailのテストイベントの設定

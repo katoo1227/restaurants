@@ -1,10 +1,10 @@
-IamPolicyRegisterTasksTmpScrapingAbstractPages:
+IamPolicyNotifyNewShops:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractPagesProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractPagesDev"
+            - "RestaurantsNotifyNewShopsProd"
+            - "RestaurantsNotifyNewShopsDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -14,7 +14,8 @@ IamPolicyRegisterTasksTmpScrapingAbstractPages:
                   Resource: !GetAtt "LambdaErrorCommon.Arn"
                 - Effect: "Allow"
                   Action:
+                      - "dynamodb:Query"
                       - "dynamodb:BatchWriteItem"
-                  Resource: !GetAtt "DynamodbRestaurantsTasksTmp.Arn"
+                  Resource: !GetAtt "DynamodbRestaurants.Arn"
         Roles:
-            - !Ref "IamRoleRegisterTasksTmpScrapingAbstractPages"
+            - !Ref "IamRoleNotifyNewShops"

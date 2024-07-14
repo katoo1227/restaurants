@@ -64,7 +64,7 @@ def check_event(event: dict) -> None:
 
     # 許可されたkindのうちのどれかかの判定
     approval_kinds = [
-        "RegisterTasksTmpScrapingAbstractPages",
+        "RegisterAbstractPages",
         "ScrapingAbstract",
         "ScrapingDetail",
     ]
@@ -121,7 +121,7 @@ def register_schedules(kind: str, tasks: list[TaskTmp]) -> None:
 
     # スケジュールの実行時間
     current_date = datetime.now(pytz.timezone("Asia/Tokyo")).date()
-    if kind == "RegisterTasksTmpScrapingAbstractPages":
+    if kind == "RegisterAbstractPages":
         start_datetime = datetime.combine(current_date, time(1, 0))
         role_arn = os.environ[
             "ARN_IAM_ROLE_INVOKE_REGISTER_TASKS_TMP_SCRAPING_ABSTRACT_PAGES"

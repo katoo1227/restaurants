@@ -25,7 +25,7 @@ IamPolicyRegisterSchedules:
                   Action:
                       - "iam:PassRole"
                   Resource:
-                      - !GetAtt "IamRoleInvokeRegisterTasksTmpScrapingAbstractPages.Arn"
+                      - !GetAtt "IamRoleInvokeRegisterAbstractPages.Arn"
                       - !GetAtt "IamRoleInvokeScrapingAbstract.Arn"
                       - !GetAtt "IamRoleInvokeScrapingDetail.Arn"
         Roles:

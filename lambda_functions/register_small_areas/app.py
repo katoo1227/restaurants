@@ -131,7 +131,7 @@ def register_tasks_tmp(small_areas: list) -> None:
                 "PutRequest": {
                     "Item": dynamodb_types.serialize_dict(
                         {
-                            "kind": "RegisterTasksTmpScrapingAbstractPages",
+                            "kind": "RegisterAbstractPages",
                             "params_id": a["small_area_code"],
                             "exec_arn": os.environ[
                                 "ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRAT_PAGES"

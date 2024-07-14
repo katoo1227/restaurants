@@ -1,10 +1,10 @@
-IamPolicyRegisterTasksTmpScrapingAbstractSmallAreas:
+IamPolicyRegisterSmallAreas:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractSmallAreasProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractSmallAreasDev"
+            - "RestaurantsRegisterSmallAreasProd"
+            - "RestaurantsRegisterSmallAreasDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -22,4 +22,4 @@ IamPolicyRegisterTasksTmpScrapingAbstractSmallAreas:
                       - "dynamodb:BatchWriteItem"
                   Resource: !GetAtt "DynamodbRestaurantsTasksTmp.Arn"
         Roles:
-            - !Ref "IamRoleRegisterTasksTmpScrapingAbstractSmallAreas"
+            - !Ref "IamRoleRegisterSmallAreas"

@@ -1,12 +1,12 @@
-LambdaRegisterTasksTmpScrapingAbstractPages:
+LambdaRegisterAbstractPages:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/register_tasks_tmp_scraping_abstract_pages/"
+        CodeUri: "./lambda_functions/register_abstract_pages/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractPagesProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractPagesDev"
-        Role: !GetAtt "IamRoleRegisterTasksTmpScrapingAbstractPages.Arn"
+            - "RestaurantsRegisterAbstractPagesProd"
+            - "RestaurantsRegisterAbstractPagesDev"
+        Role: !GetAtt "IamRoleRegisterAbstractPages.Arn"
         Runtime: "python3.10"
         Layers:
             - !Ref "LambdaLayerDynamodbTypes"

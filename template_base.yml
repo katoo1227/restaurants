@@ -43,22 +43,22 @@ Resources:
     - $file: resources/invoke_register_schedules/iam_policy.yml
 
     # EventBridge - 概要情報スクレイピングタスクの登録（小エリアごと）
-    - $file: resources/invoke_register_task_scraping_abstract_small_areas/iam_role.yml
-    - $file: resources/invoke_register_task_scraping_abstract_small_areas/iam_policy.yml
+    - $file: resources/invoke_register_small_areas/iam_role.yml
+    - $file: resources/invoke_register_small_areas/iam_policy.yml
 
     # Lambda - 概要情報スクレイピングタスクの登録（小エリアごと）
-    - $file: resources/register_tasks_tmp_scraping_abstract_small_areas/lambda.yml
-    - $file: resources/register_tasks_tmp_scraping_abstract_small_areas/iam_role.yml
-    - $file: resources/register_tasks_tmp_scraping_abstract_small_areas/iam_policy.yml
+    - $file: resources/register_small_areas/lambda.yml
+    - $file: resources/register_small_areas/iam_role.yml
+    - $file: resources/register_small_areas/iam_policy.yml
 
     # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/invoke_register_task_scraping_abstract_pages/iam_role.yml
-    - $file: resources/invoke_register_task_scraping_abstract_pages/iam_policy.yml
+    - $file: resources/invoke_register_abstract_pages/iam_role.yml
+    - $file: resources/invoke_register_abstract_pages/iam_policy.yml
 
     # Lambda - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/register_tasks_tmp_scraping_abstract_pages/lambda.yml
-    - $file: resources/register_tasks_tmp_scraping_abstract_pages/iam_role.yml
-    - $file: resources/register_tasks_tmp_scraping_abstract_pages/iam_policy.yml
+    - $file: resources/register_abstract_pages/lambda.yml
+    - $file: resources/register_abstract_pages/iam_role.yml
+    - $file: resources/register_abstract_pages/iam_policy.yml
 
     # EventBridge - 概要情報スクレイピング
     - $file: resources/invoke_scraping_abstract/iam_role.yml
@@ -77,6 +77,11 @@ Resources:
     - $file: resources/scraping_detail/lambda.yml
     - $file: resources/scraping_detail/iam_role.yml
     - $file: resources/scraping_detail/iam_policy.yml
+
+    # Lambda - 新規の飲食店通知
+    - $file: resources/notify_new_shops/lambda.yml
+    - $file: resources/notify_new_shops/iam_role.yml
+    - $file: resources/notify_new_shops/iam_policy.yml
 
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
@@ -103,16 +108,16 @@ Outputs:
             Name: "ARN-LambdaRegisterSchedule"
 
     # 概要情報スクレイピングタスクの登録（小エリアごと）LambdaのARN
-    ArnLambdaRegisterTasksTmpScrapingAbstractSmallAreas:
-        Value: !GetAtt "LambdaRegisterTasksTmpScrapingAbstractSmallAreas.Arn"
+    ArnLambdaRegisterSmallAreas:
+        Value: !GetAtt "LambdaRegisterSmallAreas.Arn"
         Export:
-            Name: "ARN-LambdaRegisterTasksTmpScrapingAbstractSmallAreas"
+            Name: "ARN-LambdaRegisterSmallAreas"
 
     # 概要情報スクレイピングタスクの登録（ページごと）LambdaのARN
-    ArnLambdaRegisterTasksTmpScrapingAbstractPages:
-        Value: !GetAtt "LambdaRegisterTasksTmpScrapingAbstractPages.Arn"
+    ArnLambdaRegisterAbstractPages:
+        Value: !GetAtt "LambdaRegisterAbstractPages.Arn"
         Export:
-            Name: "ARN-LambdaRegisterTasksTmpScrapingAbstractPages"
+            Name: "ARN-LambdaRegisterAbstractPages"
 
     # 概要情報スクレイピングLambdaのARN
     ArnScrapingAbstract:
