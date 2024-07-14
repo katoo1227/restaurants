@@ -265,18 +265,19 @@ def update_restaurant(id: str, info: dict) -> None:
     if is_put:
         tz = pytz.timezone("Asia/Tokyo")
         now = datetime.now(tz)
+        item = {
+            "id": id,
+            "name": info["name"],
+            "address": info["address"],
+            "latitude": info["latitude"],
+            "longitude": info["longitude"],
+            "open_hours": info["open_hours"],
+            "close_days": info["close_days"],
+            "is_notified": res_json["is_notified"],
+            "created_at": res_json["created_at"],
+            "updated_at": now.strftime("%Y-%m-%d %H:%M:%S")
+        }
         dynamodb.put_item(
             TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"],
-            Item={
-                "id": dynamodb_types.serialize(id),
-                "name": dynamodb_types.serialize(info["name"]),
-                "address": dynamodb_types.serialize(info["address"]),
-                "latitude": dynamodb_types.serialize(info["latitude"]),
-                "longitude": dynamodb_types.serialize(info["longitude"]),
-                "open_hours": dynamodb_types.serialize(info["open_hours"]),
-                "close_days": dynamodb_types.serialize(info["close_days"]),
-                "is_notified": dynamodb_types.serialize(res_json["is_notified"]),
-                "created_at": dynamodb_types.serialize(res_json["created_at"]),
-                "updated_at": dynamodb_types.serialize(now.strftime("%Y-%m-%d %H:%M:%S")),
-            },
+            Item=dynamodb_types.serialize_dict(item)
         )

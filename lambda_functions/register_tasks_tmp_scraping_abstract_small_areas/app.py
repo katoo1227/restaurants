@@ -129,18 +129,16 @@ def register_tasks_tmp(small_areas: list) -> None:
         put_datas.append(
             {
                 "PutRequest": {
-                    "Item": {
-                        "kind": dynamodb_types.serialize(
-                            "RegisterTasksTmpScrapingAbstractPages"
-                        ),
-                        "params_id": dynamodb_types.serialize(a["small_area_code"]),
-                        "exec_arn": dynamodb_types.serialize(
-                            os.environ[
+                    "Item": dynamodb_types.serialize_dict(
+                        {
+                            "kind": "RegisterTasksTmpScrapingAbstractPages",
+                            "params_id": a["small_area_code"],
+                            "exec_arn": os.environ[
                                 "ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRAT_PAGES"
-                            ]
-                        ),
-                        "params": dynamodb_types.serialize(params),
-                    }
+                            ],
+                            "params": params,
+                        }
+                    )
                 }
             }
         )

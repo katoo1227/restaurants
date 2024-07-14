@@ -156,12 +156,14 @@ def register_restaurants(restaurant_ids: list[str]) -> None:
         add_datas.append(
             {
                 "PutRequest": {
-                    "Item": {
-                        "id": dynamodb_types.serialize(id),
-                        "is_notified": dynamodb_types.serialize(0),
-                        "created_at": dynamodb_types.serialize(now),
-                        "updated_at": dynamodb_types.serialize(now),
-                    }
+                    "Item": dynamodb_types.serialize_dict(
+                        {
+                            "id": id,
+                            "is_notified": 0,
+                            "created_at": now,
+                            "updated_at": now,
+                        }
+                    )
                 }
             }
         )
@@ -217,16 +219,21 @@ def register_restaurants_areas(event: dict, restaurant_ids: list[str]):
         update_datas = []
         for ids in restaurant_ids_list:
             for id in ids:
-                item = {
-                    "area_category": dynamodb_types.serialize(ac),
-                    "code_restaurant_id": dynamodb_types.serialize(
-                        f"{event[code_key]}#{id}"
-                    ),
-                    "restaurant_id": dynamodb_types.serialize(id),
-                    "code": dynamodb_types.serialize(event[code_key]),
-                    "name": dynamodb_types.serialize(event[name_key]),
-                }
-                update_datas.append({"PutRequest": {"Item": item}})
+                update_datas.append(
+                    {
+                        "PutRequest": {
+                            "Item": dynamodb_types.serialize_dict(
+                                {
+                                    "area_category": ac,
+                                    "code_restaurant_id": f"{event[code_key]}#{id}",
+                                    "restaurant_id": id,
+                                    "code": event[code_key],
+                                    "name": event[name_key],
+                                }
+                            )
+                        }
+                    }
+                )
 
         # DynamoDBの一括更新
         dynamodb.batch_write_item(
@@ -248,15 +255,20 @@ def register_tasks_tmp(ids: list[str]) -> None:
     # 追加データの作成
     put_datas = []
     for id in ids:
-        item = {
-            "kind": dynamodb_types.serialize("ScrapingDetail"),
-            "params_id": dynamodb_types.serialize(id),
-            "exec_arn": dynamodb_types.serialize(
-                os.environ["ARN_LAMBDA_SCRAPING_DETAIL"]
-            ),
-            "params": dynamodb_types.serialize({"id": id}),
-        }
-        put_datas.append({"PutRequest": {"Item": item}})
+        put_datas.append(
+            {
+                "PutRequest": {
+                    "Item": dynamodb_types.serialize_dict(
+                        {
+                            "kind": "ScrapingDetail",
+                            "params_id": id,
+                            "exec_arn": os.environ["ARN_LAMBDA_SCRAPING_DETAIL"],
+                            "params": {"id": id},
+                        }
+                    )
+                }
+            }
+        )
 
     # DynamoDBへの追加
     dynamodb.batch_write_item(
