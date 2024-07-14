@@ -9,6 +9,7 @@ LambdaRegisterTasksTmpScrapingAbstractPages:
         Role: !GetAtt "IamRoleRegisterTasksTmpScrapingAbstractPages.Arn"
         Runtime: "python3.10"
         Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
             - !Ref "LambdaLayerCheckAreaCodeNames"
         Environment:
             Variables:
