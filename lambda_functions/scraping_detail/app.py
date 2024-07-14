@@ -6,8 +6,8 @@ import requests
 import urllib.parse
 from bs4 import BeautifulSoup
 from datetime import datetime
-from boto3.dynamodb.types import TypeDeserializer
-from decimal import Decimal
+import pytz
+import dynamodb_types
 
 
 def lambda_handler(event, context):
@@ -238,26 +238,15 @@ def update_restaurant(id: str, info: dict) -> None:
     """
     dynamodb = boto3.client("dynamodb")
     res = dynamodb.get_item(
-        TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"], Key={"id": {"S": id}}
+        TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"],
+        Key={"id": dynamodb_types.serialize(id)},
     )
     if "Item" not in res:
         raise Exception(f"飲食店データの取得に失敗。{id}のレコードが存在しない。")
 
-    # dynamoDBデシリアライザー
-    td = TypeDeserializer()
+    res_json = {k: dynamodb_types.deserialize(v) for k, v in res["Item"].items()}
 
-    res_json = {}
-    for key, value in res["Item"].items():
-        v = td.deserialize(value)
-        # 数値の場合はDecimal型になるので、intかfloatに変換
-        if isinstance(v, Decimal):
-            if int(v) == v:
-                v = int(v)
-            else:
-                v = float(v)
-        res_json[key] = v
-
-    # put対象か
+    # 1つでもカラムの値が違っていればput対象
     is_put = False
     update_columns = [
         "name",
@@ -270,20 +259,24 @@ def update_restaurant(id: str, info: dict) -> None:
     for c in update_columns:
         if c not in res_json or info[c] != res_json[c]:
             is_put = True
+            break
 
+    # put対象の場合
     if is_put:
+        tz = pytz.timezone("Asia/Tokyo")
+        now = datetime.now(tz)
         dynamodb.put_item(
             TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"],
             Item={
-                "id": {"S": id},
-                "name": {"S": info["name"]},
-                "address": {"S": info["address"]},
-                "latitude": {"N": str(info["latitude"])},
-                "longitude": {"N": str(info["longitude"])},
-                "open_hours": {"S": info["open_hours"]},
-                "close_days": {"S": info["close_days"]},
-                "is_notified": {"N": str(res_json["is_notified"])},
-                "createrd_at": {"S": res_json["created_at"]},
-                "updated_at": {"S": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+                "id": dynamodb_types.serialize(id),
+                "name": dynamodb_types.serialize(info["name"]),
+                "address": dynamodb_types.serialize(info["address"]),
+                "latitude": dynamodb_types.serialize(info["latitude"]),
+                "longitude": dynamodb_types.serialize(info["longitude"]),
+                "open_hours": dynamodb_types.serialize(info["open_hours"]),
+                "close_days": dynamodb_types.serialize(info["close_days"]),
+                "is_notified": dynamodb_types.serialize(res_json["is_notified"]),
+                "created_at": dynamodb_types.serialize(res_json["created_at"]),
+                "updated_at": dynamodb_types.serialize(now.strftime("%Y-%m-%d %H:%M:%S")),
             },
         )

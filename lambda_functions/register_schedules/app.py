@@ -1,10 +1,9 @@
 import json
 import os
 import boto3
-from boto3.dynamodb.types import TypeDeserializer
-from decimal import Decimal
 import pytz
 from datetime import datetime, time, timedelta
+import dynamodb_types
 from dataclasses import dataclass
 
 
@@ -91,12 +90,16 @@ def get_tasks_from_tmp(kind: str) -> list[TaskTmp]:
     res = dynamodb.query(
         TableName=os.environ["NAME_DYNAMODB_TABLE_TASKS_TMP"],
         KeyConditionExpression="kind = :kind",
-        ExpressionAttributeValues={":kind": {"S": kind}},
+        ExpressionAttributeValues={":kind": dynamodb_types.serialize(kind)},
     )
 
-    # TaskTmp型に変換して返す
+    # TaskTmp型リストに変換して返す
     return [
-        TaskTmp(i["params_id"]["S"], i["exec_arn"]["S"], i["params"]["M"])
+        TaskTmp(
+            dynamodb_types.deserialize(i["params_id"]),
+            dynamodb_types.deserialize(i["exec_arn"]),
+            dynamodb_types.deserialize(i["params"]),
+        )
         for i in res["Items"]
     ]
 
@@ -132,25 +135,10 @@ def register_schedules(kind: str, tasks: list[TaskTmp]) -> None:
     else:
         raise Exception(f"想定外のkindが渡されました。{kind}")
 
-    # dynamoDBデシリアライザー
-    td = TypeDeserializer()
-
     # 1分ずつずらしながらスケジュール登録
     for i, task in enumerate(tasks):
         # スケジュール実行日時
         jst = start_datetime + timedelta(minutes=i)
-
-        # イベントパラメータを扱いやすいjsonに変換
-        params = {}
-        for key, value in task.params.items():
-            v = td.deserialize(value)
-            # 数値の場合はDecimal型になるので、intかfloatに変換
-            if isinstance(v, Decimal):
-                if int(v) == v:
-                    v = int(v)
-                else:
-                    v = float(v)
-            params[key] = v
 
         # スケジュールの作成
         scheduler.create_schedule(
@@ -164,7 +152,7 @@ def register_schedules(kind: str, tasks: list[TaskTmp]) -> None:
             State="ENABLED",
             Target={
                 "Arn": task.exec_arn,
-                "Input": json.dumps(params),
+                "Input": json.dumps(task.params),
                 "RoleArn": role_arn,
             },
         )
@@ -187,7 +175,9 @@ def delete_tasks_to_tmp(kind: str, tasks: list[TaskTmp]) -> None:
     delete_requests = [
         {
             "DeleteRequest": {
-                "Key": {"kind": {"S": kind}, "params_id": {"S": t.params_id}}
+                "Key": {
+                    "kind": dynamodb_types.serialize(kind),
+                    "params_id": dynamodb_types.serialize(t.params_id)}
             }
         }
         for t in tasks

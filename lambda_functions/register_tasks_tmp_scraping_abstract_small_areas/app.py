@@ -4,6 +4,7 @@ import json
 import requests
 import urllib.parse
 import re
+import dynamodb_types
 
 
 def lambda_handler(event, context):
@@ -121,22 +122,24 @@ def register_tasks_tmp(small_areas: list) -> None:
         # paramsカラムの値
         params = {}
         for key in ["large_service", "service", "large", "middle", "small"]:
-            params[f"{key}_area_code"] = {"S": a[f"{key}_area_code"]}
-            params[f"{key}_area_name"] = {"S": a[f"{key}_area_name"]}
+            params[f"{key}_area_code"] = a[f"{key}_area_code"]
+            params[f"{key}_area_name"] = a[f"{key}_area_name"]
 
         # 追加
         put_datas.append(
             {
                 "PutRequest": {
                     "Item": {
-                        "kind": {"S": "RegisterTasksTmpScrapingAbstractPages"},
-                        "params_id": {"S": a["small_area_code"]},
-                        "exec_arn": {
-                            "S": os.environ[
+                        "kind": dynamodb_types.serialize(
+                            "RegisterTasksTmpScrapingAbstractPages"
+                        ),
+                        "params_id": dynamodb_types.serialize(a["small_area_code"]),
+                        "exec_arn": dynamodb_types.serialize(
+                            os.environ[
                                 "ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRAT_PAGES"
                             ]
-                        },
-                        "params": {"M": params},
+                        ),
+                        "params": dynamodb_types.serialize(params),
                     }
                 }
             }

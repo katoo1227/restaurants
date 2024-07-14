@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 from bs4 import BeautifulSoup
 from check_area_code_names import check_area_code_names
+import dynamodb_types
 
 
 def lambda_handler(event, context):
@@ -139,7 +140,7 @@ def register_restaurants(restaurant_ids: list[str]) -> None:
     table_name = os.environ["NAME_DYNAMODB_RESTAURANTS"]
 
     # パーティションキーで検索
-    ids = [{"id": {"S": id}} for id in restaurant_ids]
+    ids = [{"id": dynamodb_types.serialize(id)} for id in restaurant_ids]
     id_res = dynamodb.batch_get_item(RequestItems={table_name: {"Keys": ids}})
     records = id_res["Responses"][table_name]
 
@@ -148,7 +149,7 @@ def register_restaurants(restaurant_ids: list[str]) -> None:
 
     # 追加データの作成
     add_datas = []
-    record_ids = [r["id"]["S"] for r in records]
+    record_ids = [dynamodb_types.serialize(r["id"]) for r in records]
     for id in restaurant_ids:
         if id in record_ids:
             continue
@@ -156,10 +157,10 @@ def register_restaurants(restaurant_ids: list[str]) -> None:
             {
                 "PutRequest": {
                     "Item": {
-                        "id": {"S": id},
-                        "is_notified": {"N": "0"},
-                        "created_at": {"S": now},
-                        "updated_at": {"S": now},
+                        "id": dynamodb_types.serialize(id),
+                        "is_notified": dynamodb_types.serialize(0),
+                        "created_at": dynamodb_types.serialize(now),
+                        "updated_at": dynamodb_types.serialize(now),
                     }
                 }
             }
@@ -217,11 +218,13 @@ def register_restaurants_areas(event: dict, restaurant_ids: list[str]):
         for ids in restaurant_ids_list:
             for id in ids:
                 item = {
-                    "area_category": {"S": ac},
-                    "code_restaurant_id": {"S": f"{event[code_key]}#{id}"},
-                    "restaurant_id": {"S": id},
-                    "code": {"S": event[code_key]},
-                    "name": {"S": event[name_key]},
+                    "area_category": dynamodb_types.serialize(ac),
+                    "code_restaurant_id": dynamodb_types.serialize(
+                        f"{event[code_key]}#{id}"
+                    ),
+                    "restaurant_id": dynamodb_types.serialize(id),
+                    "code": dynamodb_types.serialize(event[code_key]),
+                    "name": dynamodb_types.serialize(event[name_key]),
                 }
                 update_datas.append({"PutRequest": {"Item": item}})
 
@@ -246,10 +249,12 @@ def register_tasks_tmp(ids: list[str]) -> None:
     put_datas = []
     for id in ids:
         item = {
-            "kind": {"S": "ScrapingDetail"},
-            "params_id": {"S": id},
-            "exec_arn": {"S": os.environ["ARN_LAMBDA_SCRAPING_DETAIL"]},
-            "params": {"M": {"id": {"S": id}}},
+            "kind": dynamodb_types.serialize("ScrapingDetail"),
+            "params_id": dynamodb_types.serialize(id),
+            "exec_arn": dynamodb_types.serialize(
+                os.environ["ARN_LAMBDA_SCRAPING_DETAIL"]
+            ),
+            "params": dynamodb_types.serialize({"id": id}),
         }
         put_datas.append({"PutRequest": {"Item": item}})
 

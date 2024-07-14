@@ -8,6 +8,8 @@ LambdaScrapingDetail:
             - "RestaurantsScrapingDetailDev"
         Role: !GetAtt "IamRoleScrapingDetail.Arn"
         Runtime: "python3.10"
+        Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"

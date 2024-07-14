@@ -10,6 +10,7 @@ LambdaScrapingAbstract:
         Runtime: "python3.10"
         Layers:
             - !Ref "LambdaLayerCheckAreaCodeNames"
+            - !Ref "LambdaLayerDynamodbTypes"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"

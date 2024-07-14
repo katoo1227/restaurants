@@ -5,6 +5,7 @@ import requests
 import re
 from bs4 import BeautifulSoup
 from check_area_code_names import check_area_code_names
+import dynamodb_types
 
 
 def lambda_handler(event, context):
@@ -120,18 +121,18 @@ def register_tasks_tmp(event: dict, page_num: int) -> None:
     # paramsカラムの共通の値
     params_common = {}
     for key in ["large_service", "service", "large", "middle", "small"]:
-        params_common[f"{key}_area_code"] = {"S": event[f"{key}_area_code"]}
-        params_common[f"{key}_area_name"] = {"S": event[f"{key}_area_name"]}
+        params_common[f"{key}_area_code"] = event[f"{key}_area_code"]
+        params_common[f"{key}_area_name"] = event[f"{key}_area_name"]
 
     # 追加データの作成
     put_requests = [
         {
             "PutRequest": {
                 "Item": {
-                    "kind": {"S": "ScrapingAbstract"},
-                    "params_id": {"S": f"{event['small_area_code']}_{i}"},
-                    "exec_arn": {"S": os.environ["ARN_LAMBDA_SCRAPING_ABSTRACT"]},
-                    "params": {"M": params_common | {"page_num": {"N": str(i)}}},
+                    "kind": dynamodb_types.serialize("ScrapingAbstract"),
+                    "params_id": dynamodb_types.serialize(f"{event['small_area_code']}_{i}"),
+                    "exec_arn": dynamodb_types.serialize(os.environ["ARN_LAMBDA_SCRAPING_ABSTRACT"]),
+                    "params": dynamodb_types.serialize(params_common | {"page_num": i}),
                 }
             }
         }
