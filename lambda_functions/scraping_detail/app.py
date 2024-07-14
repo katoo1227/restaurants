@@ -21,15 +21,9 @@ def lambda_handler(event, context):
         # 飲食店情報の更新
         update_restaurant(event["id"], info)
     except Exception as e:
-        msg = f"""
-{str(e)}
-
-関数名：{context.function_name}
-イベント：{json.dumps(event)}
-"""
-        payload = {"type": 2, "msg": msg}
-        lambda_client.invoke(
-            FunctionName=os.environ["ARN_LAMBDA_LINE_NOTIFY"],
+        payload = {"function_name": context.function_name, "msg": str(e)}
+        boto3.client("lambda").invoke(
+            FunctionName=os.environ["ARN_LAMBDA_ERROR_COMMON"],
             InvocationType="RequestResponse",
             Payload=json.dumps(payload).encode("utf-8"),
         )

@@ -10,7 +10,7 @@ LambdaRegisterTasksTmpScrapingAbstractSmallAreas:
         Runtime: "python3.10"
         Environment:
             Variables:
-                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
                 ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRAT_PAGES: !GetAtt "LambdaRegisterTasksTmpScrapingAbstractPages.Arn"
                 NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
         Handler: "app.lambda_handler"

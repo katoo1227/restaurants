@@ -1,4 +1,4 @@
-ErrorLogs:
+S3ErrorLogs:
     Type: "AWS::S3::Bucket"
     Properties:
         BucketName: !If
@@ -11,3 +11,17 @@ ErrorLogs:
                       SSEAlgorithm: 'aws:kms'
                       KMSMasterKeyID: 'alias/aws/s3'
                   BucketKeyEnabled: true
+
+S3ErrorLogsBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+        Bucket: !Ref "S3ErrorLogs"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      "AWS": !GetAtt "IamRoleErrorCommon.Arn"
+                  Action:
+                      - "s3:PutObject"
+                  Resource: !Sub 'arn:aws:s3:::${S3ErrorLogs}/*'

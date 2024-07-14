@@ -10,7 +10,7 @@ LambdaRegisterSchedules:
         Runtime: "python3.10"
         Environment:
             Variables:
-                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
                 ARN_IAM_ROLE_INVOKE_REGISTER_TASKS_TMP_SCRAPING_ABSTRACT_PAGES: !GetAtt "IamRoleInvokeRegisterTasksTmpScrapingAbstractPages.Arn"
                 ARN_IAM_ROLE_INVOKE_SCRAPING_ABSTRACT: !GetAtt "IamRoleInvokeScrapingAbstract.Arn"
                 ARN_IAM_ROLE_INVOKE_SCRAPING_DETAIL: !GetAtt "IamRoleInvokeScrapingDetail.Arn"

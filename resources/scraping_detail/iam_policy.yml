@@ -11,7 +11,7 @@ IamPolicyScrapingDetail:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaLineNotify.Arn"
+                  Resource: !GetAtt "LambdaErrorCommon.Arn"
                 - Effect: "Allow"
                   Action:
                       - "dynamodb:GetItem"
