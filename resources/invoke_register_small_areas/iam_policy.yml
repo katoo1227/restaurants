@@ -1,0 +1,16 @@
+IamPolicyInvokeRegisterSmallAreas:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsInvokeRegisterSmallAreasProd"
+            - "RestaurantsInvokeRegisterSmallAreasDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource: !GetAtt "LambdaRegisterSmallAreas.Arn"
+        Roles:
+            - !Ref "IamRoleInvokeRegisterSmallAreas"

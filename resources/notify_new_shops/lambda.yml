@@ -1,0 +1,21 @@
+LambdaNotifyNewShops:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/notify_new_shops/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsNotifyNewShopsProd"
+            - "RestaurantsNotifyNewShopsDev"
+        Role: !GetAtt "IamRoleNotifyNewShops.Arn"
+        Runtime: "python3.10"
+        Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
+        Environment:
+            Variables:
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30

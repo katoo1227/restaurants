@@ -1,19 +1,19 @@
-LambdaRegisterTasksTmpScrapingAbstractSmallAreas:
+LambdaRegisterSmallAreas:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/register_tasks_tmp_scraping_abstract_small_areas/"
+        CodeUri: "./lambda_functions/register_small_areas/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractSmallAreasProd"
-            - "RestaurantsRegisterTasksTmpScrapingAbstractSmallAreasDev"
-        Role: !GetAtt "IamRoleRegisterTasksTmpScrapingAbstractSmallAreas.Arn"
+            - "RestaurantsRegisterSmallAreasProd"
+            - "RestaurantsRegisterSmallAreasDev"
+        Role: !GetAtt "IamRoleRegisterSmallAreas.Arn"
         Runtime: "python3.10"
         Layers:
             - !Ref "LambdaLayerDynamodbTypes"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRAT_PAGES: !GetAtt "LambdaRegisterTasksTmpScrapingAbstractPages.Arn"
+                ARN_LAMBDA_REGISTER_TASK_SCRAPING_ABSTRAT_PAGES: !GetAtt "LambdaRegisterAbstractPages.Arn"
                 NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
         Handler: "app.lambda_handler"
         Architectures:
@@ -21,7 +21,7 @@ LambdaRegisterTasksTmpScrapingAbstractSmallAreas:
         Timeout: 30
 
         Events:
-            EventBridgeScheduleLambdaRegisterTasksTmpScrapingAbstractSmallAreas:
+            EventBridgeScheduleLambdaRegisterSmallAreas:
                 Type: "ScheduleV2"
                 Properties:
                     ScheduleExpression: cron(0 0 ? * SUN *)
@@ -30,7 +30,7 @@ LambdaRegisterTasksTmpScrapingAbstractSmallAreas:
                     GroupName: !Ref "EventBridgeScheduleGroup"
                     Name: !If
                         - "IsProd"
-                        - "RestaurantsLambdaRegisterTasksTmpScrapingAbstractSmallAreasProd"
-                        - "RestaurantsLambdaRegisterTasksTmpScrapingAbstractSmallAreasDev"
-                    RoleArn: !GetAtt "IamRoleInvokeRegisterTasksTmpScrapingAbstractSmallAreas.Arn"
+                        - "RestaurantsLambdaRegisterSmallAreasProd"
+                        - "RestaurantsLambdaRegisterSmallAreasDev"
+                    RoleArn: !GetAtt "IamRoleInvokeRegisterSmallAreas.Arn"
                     Input: '{"middle_area_code": "Y883"}'

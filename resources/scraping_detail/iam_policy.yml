@@ -3,8 +3,8 @@ IamPolicyScrapingDetail:
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksTmpScrapingDetailProd"
-            - "RestaurantsRegisterTasksTmpScrapingDetailDev"
+            - "RestaurantsScrapingDetailProd"
+            - "RestaurantsScrapingDetailDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
