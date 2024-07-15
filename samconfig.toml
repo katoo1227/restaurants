@@ -6,7 +6,7 @@ s3_prefix = "RestaurantsDeployDev"
 region = "ap-northeast-1"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM"
-disable_rollback = true
+disable_rollback = false
 image_repositories = []
 
 [prod.deploy.parameters]
@@ -16,5 +16,5 @@ s3_prefix = "RestaurantsDeployProd"
 region = "ap-northeast-1"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM"
-disable_rollback = true
+disable_rollback = false
 image_repositories = []
