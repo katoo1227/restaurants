@@ -10,7 +10,6 @@ LambdaRegisterPages:
         Runtime: "python3.10"
         Layers:
             - !Ref "LambdaLayerDynamodbTypes"
-            - !Ref "LambdaLayerCheckAreaCodeNames"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
