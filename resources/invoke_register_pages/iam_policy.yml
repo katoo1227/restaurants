@@ -1,0 +1,16 @@
+IamPolicyInvokeRegisterPages:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsInvokeRegisterPagesProd"
+            - "RestaurantsInvokeRegisterPagesDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource: !GetAtt "LambdaRegisterPages.Arn"
+        Roles:
+            - !Ref "IamRoleInvokeRegisterPages"

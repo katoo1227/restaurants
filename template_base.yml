@@ -7,6 +7,21 @@ Parameters:
         Type: "String"
         AllowedValues: ["dev", "prod"]
 
+    # タスク名 - ページごとのタスク登録
+    TaskNameRegisterPages:
+        Type: "String"
+        Default: "RegisterPages"
+
+    # タスク名 - 概要情報スクレイピング
+    TaskNameScrapingAbstract:
+        Type: "String"
+        Default: "ScrapingAbstract"
+
+    # タスク名 - 詳細情報スクレイピング
+    TaskNameScrapingDetail:
+        Type: "String"
+        Default: "ScrapingDetail"
+
 Conditions:
     # 本番環境かどうか
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
@@ -33,14 +48,14 @@ Resources:
     - $file: resources/error_common/iam_role.yml
     - $file: resources/error_common/iam_policy.yml
 
-    # Lambda - スケジュール登録
-    - $file: resources/register_schedules/lambda.yml
-    - $file: resources/register_schedules/iam_role.yml
-    - $file: resources/register_schedules/iam_policy.yml
+    # Lambda - スケジュール管理
+    - $file: resources/handler_schedules/lambda.yml
+    - $file: resources/handler_schedules/iam_role.yml
+    - $file: resources/handler_schedules/iam_policy.yml
 
     # EventBridge - スケジュール登録
-    - $file: resources/invoke_register_schedules/iam_role.yml
-    - $file: resources/invoke_register_schedules/iam_policy.yml
+    - $file: resources/invoke_handler_schedules/iam_role.yml
+    - $file: resources/invoke_handler_schedules/iam_policy.yml
 
     # EventBridge - 概要情報スクレイピングタスクの登録（小エリアごと）
     - $file: resources/invoke_register_small_areas/iam_role.yml
@@ -52,13 +67,13 @@ Resources:
     - $file: resources/register_small_areas/iam_policy.yml
 
     # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/invoke_register_abstract_pages/iam_role.yml
-    - $file: resources/invoke_register_abstract_pages/iam_policy.yml
+    - $file: resources/invoke_register_pages/iam_role.yml
+    - $file: resources/invoke_register_pages/iam_policy.yml
 
     # Lambda - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/register_abstract_pages/lambda.yml
-    - $file: resources/register_abstract_pages/iam_role.yml
-    - $file: resources/register_abstract_pages/iam_policy.yml
+    - $file: resources/register_pages/lambda.yml
+    - $file: resources/register_pages/iam_role.yml
+    - $file: resources/register_pages/iam_policy.yml
 
     # EventBridge - 概要情報スクレイピング
     - $file: resources/invoke_scraping_abstract/iam_role.yml
@@ -86,7 +101,7 @@ Resources:
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
     - $file: resources/dynamodb/restaurants_areas.yml
-    - $file: resources/dynamodb/restaurants_tasks_tmp.yml
+    - $file: resources/dynamodb/restaurants_tasks.yml
 
 Outputs:
     # LINE通知LambdaのARN
@@ -102,8 +117,8 @@ Outputs:
             Name: "ARN-LambdaErrorCommon"
 
     # スケジュール登録LambdaのARN
-    ArnLambdaRegisterSchedules:
-        Value: !GetAtt "LambdaRegisterSchedules.Arn"
+    ArnLambdaHandlerSchedules:
+        Value: !GetAtt "LambdaHandlerSchedules.Arn"
         Export:
             Name: "ARN-LambdaRegisterSchedule"
 
@@ -114,10 +129,10 @@ Outputs:
             Name: "ARN-LambdaRegisterSmallAreas"
 
     # 概要情報スクレイピングタスクの登録（ページごと）LambdaのARN
-    ArnLambdaRegisterAbstractPages:
-        Value: !GetAtt "LambdaRegisterAbstractPages.Arn"
+    ArnLambdaRegisterPages:
+        Value: !GetAtt "LambdaRegisterPages.Arn"
         Export:
-            Name: "ARN-LambdaRegisterAbstractPages"
+            Name: "ARN-LambdaRegisterPages"
 
     # 概要情報スクレイピングLambdaのARN
     ArnScrapingAbstract:

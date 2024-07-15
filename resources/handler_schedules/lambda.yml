@@ -1,0 +1,21 @@
+LambdaHandlerSchedules:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/handler_schedules/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsHandlerSchedulesProd"
+            - "RestaurantsHandlerSchedulesDev"
+        Role: !GetAtt "IamRoleHandlerSchedules.Arn"
+        Runtime: "python3.10"
+        Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
+        Environment:
+            Variables:
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                NAME_SCHEDULE_GROUP: !Ref "EventBridgeScheduleGroup"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30

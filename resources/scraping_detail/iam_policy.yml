@@ -19,6 +19,12 @@ IamPolicyScrapingDetail:
                   Resource: !GetAtt "DynamodbRestaurants.Arn"
                 - Effect: "Allow"
                   Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:DeleteItem"
+                  Resource:
+                      - !GetAtt "DynamodbRestaurantsTasks.Arn"
+                - Effect: "Allow"
+                  Action:
                       - "ssm:GetParameter"
                   Resource: !If
                       - "IsProd"

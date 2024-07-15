@@ -1,18 +1,13 @@
-IamPolicyRegisterSmallAreas:
+IamPolicyRegisterPages:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsRegisterSmallAreasProd"
-            - "RestaurantsRegisterSmallAreasDev"
+            - "RestaurantsRegisterPagesProd"
+            - "RestaurantsRegisterPagesDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
-                - Effect: "Allow"
-                  Action:
-                      - "ssm:GetParameter"
-                  Resource:
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/restaurants/api_key/hotpepper"
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
@@ -21,7 +16,9 @@ IamPolicyRegisterSmallAreas:
                       - !GetAtt "LambdaHandlerSchedules.Arn"
                 - Effect: "Allow"
                   Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:DeleteItem"
                       - "dynamodb:BatchWriteItem"
                   Resource: !GetAtt "DynamodbRestaurantsTasks.Arn"
         Roles:
-            - !Ref "IamRoleRegisterSmallAreas"
+            - !Ref "IamRoleRegisterPages"

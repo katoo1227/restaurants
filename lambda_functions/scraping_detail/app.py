@@ -1,26 +1,52 @@
 import boto3
 import os
 import json
-import re
 import requests
 import urllib.parse
 from bs4 import BeautifulSoup
 from datetime import datetime
 import pytz
 import dynamodb_types
+from dataclasses import dataclass
+
+
+@dataclass
+class IdParams:
+    id: str
+
+
+@dataclass
+class Task:
+    kind: str
+    params_id: str
+    params: IdParams
 
 
 def lambda_handler(event, context):
 
+    success_response = {
+        "statusCode": 200,
+        "body": "Process Complete",
+    }
+
     try:
-        # イベントパラメータのチェック
-        event_check(event)
+
+        # タスクの取得
+        task = get_task()
+
+        # 該当レコードがなければスケジュールを削除
+        if task == {}:
+            delete_schedule()
+            return success_response
 
         # 詳細情報の取得
-        info = get_detail_info(event["id"])
+        info = get_detail_info(task.params.id)
 
         # 飲食店情報の更新
-        update_restaurant(event["id"], info)
+        update_restaurant(task.params.id, info)
+
+        # タスクの削除
+        delete_task(task.kind, task.params_id)
     except Exception as e:
         payload = {"function_name": context.function_name, "msg": str(e)}
         boto3.client("lambda").invoke(
@@ -29,26 +55,46 @@ def lambda_handler(event, context):
             Payload=json.dumps(payload).encode("utf-8"),
         )
 
-    return {
-        "statusCode": 200,
-        "body": "Process Complete",
-    }
+    return success_response
 
 
-def event_check(event: dict) -> None:
+def get_task() -> Task:
     """
-    イベントパラメータのチェック
+    タスクの取得
 
-    Parameters
-    ----------
-    event: dict
-        イベントパラメータ
+    Returns
+    -------
+    Task
     """
-    if "id" not in event:
-        raise Exception(f"idがありません{json.dumps(event)}")
+    res = boto3.client("dynamodb").query(
+        TableName=os.environ["NAME_DYNAMODB_TABLE_TASKS"],
+        KeyConditionExpression="kind = :kind",
+        ExpressionAttributeValues={
+            ":kind": dynamodb_types.serialize(os.environ["NAME_TASK_SCRAPING_DETAIL"])
+        },
+        Limit=1,
+    )
 
-    if not re.match(r"J\d+", event["id"]):
-        raise Exception(f"idの値が不正です。{json.dumps(event)}")
+    # なければ空オブジェクトで返却
+    if len(res["Items"]) == 0:
+        return {}
+
+    res = dynamodb_types.deserialize_dict(res["Items"][0])
+    return Task(
+        kind=res["kind"], params_id=res["params_id"], params=IdParams(**res["params"])
+    )
+
+
+def delete_schedule() -> None:
+    """
+    スケジュールの削除
+    """
+    payload = {"task": "delete", "name": os.environ["NAME_TASK_SCRAPING_DETAIL"]}
+    boto3.client("lambda").invoke(
+        FunctionName=os.environ["NAME_LAMBDA_HANDLER_SCHEDULES"],
+        InvocationType="RequestResponse",
+        Payload=json.dumps(payload).encode("utf-8"),
+    )
 
 
 def get_detail_info(id: str) -> dict:
@@ -171,7 +217,6 @@ def get_detail_info(id: str) -> dict:
             td = tr.select_one("td")
             if td is None:
                 raise Exception(f"住所の取得に失敗。{url}\n{str(tr)}")
-            item_value = td.text.strip()
 
             # 住所
             if item_name == "住所":
@@ -250,6 +295,8 @@ def update_restaurant(id: str, info: dict) -> None:
     is_put = False
     update_columns = [
         "name",
+        "genre",
+        "sub_genre",
         "address",
         "latitude",
         "longitude",
@@ -268,6 +315,8 @@ def update_restaurant(id: str, info: dict) -> None:
         item = {
             "id": id,
             "name": info["name"],
+            "genre": info["genre"],
+            "sub_genre": info["sub_genre"],
             "address": info["address"],
             "latitude": info["latitude"],
             "longitude": info["longitude"],
@@ -275,9 +324,27 @@ def update_restaurant(id: str, info: dict) -> None:
             "close_days": info["close_days"],
             "is_notified": res_json["is_notified"],
             "created_at": res_json["created_at"],
-            "updated_at": now.strftime("%Y-%m-%d %H:%M:%S")
+            "updated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
         }
         dynamodb.put_item(
             TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"],
-            Item=dynamodb_types.serialize_dict(item)
+            Item=dynamodb_types.serialize_dict(item),
         )
+
+
+def delete_task(kind: str, params_id: str) -> None:
+    """
+    タスクの削除
+
+    Parameters
+    ----------
+    kind: str
+        タスクの種類
+
+    params_id: str
+        パラメータID
+    """
+    boto3.client("dynamodb").delete_item(
+        TableName=os.environ["NAME_DYNAMODB_TABLE_TASKS"],
+        Key=dynamodb_types.serialize_dict({"kind": kind, "params_id": params_id}),
+    )
