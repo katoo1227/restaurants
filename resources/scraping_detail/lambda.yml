@@ -13,7 +13,9 @@ LambdaScrapingDetail:
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
                 NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
+                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
                 NAME_PARAMETER_API_KEY_GOOGLE_GEOCODING: !If
                     - "IsProd"
                     - "/google/geocoding/prod/key"

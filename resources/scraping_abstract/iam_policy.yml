@@ -11,7 +11,9 @@ IamPolicyScrapingAbstract:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaErrorCommon.Arn"
+                  Resource:
+                      - !GetAtt "LambdaErrorCommon.Arn"
+                      - !GetAtt "LambdaHandlerSchedules.Arn"
                 - Effect: "Allow"
                   Action:
                       - "dynamodb:BatchGetItem"
@@ -20,10 +22,14 @@ IamPolicyScrapingAbstract:
                 - Effect: "Allow"
                   Action:
                       - "dynamodb:BatchWriteItem"
-                  Resource: !GetAtt "DynamodbRestaurantsAreas.Arn"
+                  Resource:
+                      - !GetAtt "DynamodbRestaurantsAreas.Arn"
                 - Effect: "Allow"
                   Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:DeleteItem"
                       - "dynamodb:BatchWriteItem"
-                  Resource: !GetAtt "DynamodbRestaurantsTasksTmp.Arn"
+                  Resource:
+                      - !GetAtt "DynamodbRestaurantsTasks.Arn"
         Roles:
             - !Ref "IamRoleScrapingAbstract"

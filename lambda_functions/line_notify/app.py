@@ -9,6 +9,9 @@ NOTIFY_TYPE_NORMAL = 1
 # 通知タイプ：エラー
 NOTIFY_TYPE_ERROR = 2
 
+# 通知タイプ：警告
+NOTIFY_TYPE_WARNING = 3
+
 # 一度に送れる最大文字数
 MAX_STR_LENGTH = 1000
 
@@ -25,14 +28,16 @@ def lambda_handler(event, context):
             raise Exception(f"パラメータが不正です。{json.dumps(event)}")
 
         # typeの値チェック
-        if event["type"] not in [NOTIFY_TYPE_NORMAL, NOTIFY_TYPE_ERROR]:
+        if event["type"] not in [NOTIFY_TYPE_NORMAL, NOTIFY_TYPE_ERROR, NOTIFY_TYPE_WARNING]:
             raise Exception(f"typeの値が不正です。{json.dumps(event)}")
 
         # LINE Notifyトークンを取得
         if event["type"] == NOTIFY_TYPE_NORMAL:
             token_path = "/line_notify/restaurants/token"
-        else:
+        elif event["type"] == NOTIFY_TYPE_ERROR:
             token_path = "/line_notify/error_notify/token"
+        else:
+            token_path = "/line_notify/warning_notify/token"
         res = boto3.client("ssm").get_parameter(Name=token_path, WithDecryption=True)
         token = res["Parameter"]["Value"]
 

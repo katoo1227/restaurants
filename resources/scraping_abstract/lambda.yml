@@ -13,11 +13,15 @@ LambdaScrapingAbstract:
             - !Ref "LambdaLayerDynamodbTypes"
         Environment:
             Variables:
+                NAME_TASK_SCRAPING_ABSTRACT: !Ref "TaskNameScrapingAbstract"
+                NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
                 ARN_LAMBDA_SCRAPING_DETAIL: !GetAtt "LambdaScrapingDetail.Arn"
+                ARN_IAM_ROLE_INVOKE_SCRAPING_DETAIL: !GetAtt "IamRoleInvokeScrapingDetail.Arn"
+                NAME_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
                 NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
                 NAME_DYNAMODB_RESTAURANTS_AREAS: !Ref "DynamodbRestaurantsAreas"
-                NAME_DYNAMODB_TABLE_TASKS_TMP: !Ref "DynamodbRestaurantsTasksTmp"
+                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"

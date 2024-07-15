@@ -14,5 +14,6 @@ IamPolicyLineNotify:
                   Resource:
                       - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/restaurants/token"
                       - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/error_notify/token"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/warning_notify/token"
         Roles:
             - !Ref "IamRoleLineNotify"
