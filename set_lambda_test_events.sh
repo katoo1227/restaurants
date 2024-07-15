@@ -12,7 +12,6 @@
 # Examples:
 #   bash deploy.sh dev
 
-
 # Lambda関数にテストイベントを設定
 #
 # Arguments:
@@ -88,11 +87,11 @@ set_test_events "LambdaHandlerSchedules" "ArnLambdaHandlerSchedules"
 # LambdaRegisterSmallAreasのテストイベントの設定
 set_test_events "LambdaRegisterSmallAreas" "ArnLambdaRegisterSmallAreas"
 
-# # LambdaRegisterPagesのテストイベントの設定
-# set_test_events "LambdaRegisterPages" "ArnLambdaRegisterPages"
+# LambdaRegisterPagesのテストイベントの設定
+set_test_events "LambdaRegisterPages" "ArnLambdaRegisterPages"
 
-# # ScrapingAbstractのテストイベントの設定
-# set_test_events "LambdaScrapingAbstract" "ArnScrapingAbstract"
+# ScrapingAbstractのテストイベントの設定
+set_test_events "LambdaScrapingAbstract" "ArnScrapingAbstract"
 
-# # ScrapingDetailのテストイベントの設定
-# set_test_events "LambdaScrapingDetail" "ArnScrapingDetail"
+# ScrapingDetailのテストイベントの設定
+set_test_events "LambdaScrapingDetail" "ArnScrapingDetail"
