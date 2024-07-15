@@ -9,7 +9,6 @@ LambdaScrapingAbstract:
         Role: !GetAtt "IamRoleScrapingAbstract.Arn"
         Runtime: "python3.10"
         Layers:
-            - !Ref "LambdaLayerCheckAreaCodeNames"
             - !Ref "LambdaLayerDynamodbTypes"
         Environment:
             Variables:
