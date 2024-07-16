@@ -81,7 +81,7 @@ set_test_events "LambdaLineNotify" "ArnLambdaLineNotify"
 # LambdaErrorCommonのテストイベントの設定
 set_test_events "LambdaErrorCommon" "ArnLambdaErrorCommon"
 
-# HandlerSchedulesのテストイベントの設定
+# LambdaHandlerSchedulesのテストイベントの設定
 set_test_events "LambdaHandlerSchedules" "ArnLambdaHandlerSchedules"
 
 # LambdaRegisterSmallAreasのテストイベントの設定
@@ -90,8 +90,11 @@ set_test_events "LambdaRegisterSmallAreas" "ArnLambdaRegisterSmallAreas"
 # LambdaRegisterPagesのテストイベントの設定
 set_test_events "LambdaRegisterPages" "ArnLambdaRegisterPages"
 
-# ScrapingAbstractのテストイベントの設定
+# LambdaScrapingAbstractのテストイベントの設定
 set_test_events "LambdaScrapingAbstract" "ArnScrapingAbstract"
 
-# ScrapingDetailのテストイベントの設定
+# LambdaScrapingDetailのテストイベントの設定
 set_test_events "LambdaScrapingDetail" "ArnScrapingDetail"
+
+# LambdaNotifyNewRestaurantsのテストイベントの設定
+set_test_events "LambdaNotifyNewRestaurants" "ArnNotifyNewRestaurants"

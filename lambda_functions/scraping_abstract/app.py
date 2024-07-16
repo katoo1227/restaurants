@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 from bs4 import BeautifulSoup
 import dynamodb_types
+import pytz
 from dataclasses import dataclass, asdict
 
 
@@ -201,7 +202,8 @@ def register_restaurants(restaurant_ids: list[str]) -> None:
     records = id_res["Responses"][table_name]
 
     # 今の日時
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    tz = pytz.timezone("Asia/Tokyo")
+    now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
     # 追加データの作成
     add_datas = []

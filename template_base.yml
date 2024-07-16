@@ -92,9 +92,9 @@ Resources:
     - $file: resources/scraping_detail/iam_policy.yml
 
     # Lambda - 新規の飲食店通知
-    - $file: resources/notify_new_shops/lambda.yml
-    - $file: resources/notify_new_shops/iam_role.yml
-    - $file: resources/notify_new_shops/iam_policy.yml
+    - $file: resources/notify_new_restaurants/lambda.yml
+    - $file: resources/notify_new_restaurants/iam_role.yml
+    - $file: resources/notify_new_restaurants/iam_policy.yml
 
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
@@ -143,3 +143,9 @@ Outputs:
         Value: !GetAtt "LambdaScrapingDetail.Arn"
         Export:
             Name: "ARN-ScrapingDetail"
+
+    # 新規の飲食店通知LambdaのARN
+    ArnNotifyNewRestaurants:
+        Value: !GetAtt "LambdaNotifyNewRestaurants.Arn"
+        Export:
+            Name: "ARN-NotifyNewRestaurants"
