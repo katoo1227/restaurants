@@ -125,6 +125,8 @@ def get_detail_info(id: str) -> dict:
             営業時間
         close_days: str
             定休日情報
+        parking: str
+            駐車場
     """
     # 返り値の初期化
     result = {
@@ -136,6 +138,7 @@ def get_detail_info(id: str) -> dict:
         "longitude": 0,
         "open_hours": "",
         "close_days": "",
+        "parking": "",
     }
 
     # URL
@@ -195,7 +198,7 @@ def get_detail_info(id: str) -> dict:
     for table in info_tables:
 
         # 飲食店情報の表でなければスキップ
-        if table["summary"] != "お店情報":
+        if table["summary"] != "お店情報" and table["summary"] != "設備":
             continue
 
         # 行の取得
@@ -229,6 +232,10 @@ def get_detail_info(id: str) -> dict:
             # 定休日
             if item_name == "定休日":
                 result["close_days"] = td.decode_contents(formatter="html").strip()
+
+            # 駐車場
+            if item_name == "駐車場":
+                result["parking"] = td.text.strip()
 
     # 緯度・経度
     if result["address"] != "":
@@ -280,6 +287,8 @@ def update_restaurant(id: str, info: dict) -> None:
             営業時間
         close_days: str
             定休日情報
+        parking: str
+            駐車場
     """
     dynamodb = boto3.client("dynamodb")
     res = dynamodb.get_item(
@@ -302,6 +311,7 @@ def update_restaurant(id: str, info: dict) -> None:
         "longitude",
         "open_hours",
         "close_days",
+        "parking"
     ]
     for c in update_columns:
         if c not in res_json or info[c] != res_json[c]:
@@ -322,6 +332,7 @@ def update_restaurant(id: str, info: dict) -> None:
             "longitude": info["longitude"],
             "open_hours": info["open_hours"],
             "close_days": info["close_days"],
+            "parking": info["parking"],
             "is_notified": res_json["is_notified"],
             "created_at": res_json["created_at"],
             "updated_at": now.strftime("%Y-%m-%d %H:%M:%S"),

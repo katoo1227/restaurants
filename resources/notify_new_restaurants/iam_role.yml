@@ -1,10 +1,10 @@
-IamRoleNotifyNewShops:
+IamRoleNotifyNewRestaurants:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsNotifyNewShopsProd"
-            - "RestaurantsNotifyNewShopsDev"
+            - "RestaurantsNotifyNewRestaurantsProd"
+            - "RestaurantsNotifyNewRestaurantsDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
