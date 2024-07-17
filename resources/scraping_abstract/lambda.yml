@@ -10,6 +10,7 @@ LambdaScrapingAbstract:
         Runtime: "python3.10"
         Layers:
             - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerDsArea"
         Environment:
             Variables:
                 NAME_TASK_SCRAPING_ABSTRACT: !Ref "TaskNameScrapingAbstract"

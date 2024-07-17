@@ -10,6 +10,7 @@ LambdaRegisterSmallAreas:
         Runtime: "python3.10"
         Layers:
             - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerDsArea"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"

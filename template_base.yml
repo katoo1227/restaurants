@@ -30,6 +30,9 @@ Resources:
     # S3エラーログ用バケット
     - $file: resources/s3/error_logs.yml
 
+    # Lambdaレイヤー - エリア構造体
+    - $file: resources/lambda_layers/ds_area.yml
+
     # Lambdaレイヤー - dynamodb_types
     - $file: resources/lambda_layers/dynamodb_types.yml
 

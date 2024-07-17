@@ -6,27 +6,14 @@ import re
 from bs4 import BeautifulSoup
 import dynamodb_types
 import dataclasses
-
-
-@dataclasses.dataclass
-class Params:
-    large_service_area_code: str
-    large_service_area_name: str
-    service_area_code: str
-    service_area_name: str
-    large_area_code: str
-    large_area_name: str
-    middle_area_code: str
-    middle_area_name: str
-    small_area_code: str
-    small_area_name: str
+from ds_area import DSArea
 
 
 @dataclasses.dataclass
 class Task:
     kind: str
     params_id: str
-    params: Params
+    params: DSArea
 
 
 def lambda_handler(event, context):
@@ -96,7 +83,7 @@ def get_task_abstract_pages() -> Task:
 
     res = dynamodb_types.deserialize_dict(res["Items"][0])
     return Task(
-        kind=res["kind"], params_id=res["params_id"], params=Params(**res["params"])
+        kind=res["kind"], params_id=res["params_id"], params=DSArea(**res["params"])
     )
 
 
@@ -161,13 +148,13 @@ def get_page_num(
     return int(match.group(1))
 
 
-def register_tasks_scraping_abstract(params: Params, page_num: int) -> None:
+def register_tasks_scraping_abstract(params: DSArea, page_num: int) -> None:
     """
     タスクを登録
 
     Parameters
     ----------
-    params: Params
+    params: DSArea
         パラメータ
     page_num: int
         ページ数

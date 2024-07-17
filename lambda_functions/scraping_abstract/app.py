@@ -9,21 +9,17 @@ from bs4 import BeautifulSoup
 import dynamodb_types
 import pytz
 from dataclasses import dataclass, asdict
+from ds_area import DSArea
 
 
 @dataclass
-class AreaParams:
-    large_service_area_code: str
-    large_service_area_name: str
-    service_area_code: str
-    service_area_name: str
-    large_area_code: str
-    large_area_name: str
-    middle_area_code: str
-    middle_area_name: str
-    small_area_code: str
-    small_area_name: str
+class DSAreaPageNum(DSArea):
     page_num: int
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not isinstance(self.page_num, int) or self.page_num < 0:
+            raise Exception(f"page_numの値が不正です。{json.dumps(asdict(self))}")
 
 
 @dataclass
@@ -35,7 +31,7 @@ class IdParams:
 class Task:
     kind: str
     params_id: str
-    params: AreaParams | IdParams
+    params: DSAreaPageNum | IdParams
 
 
 def lambda_handler(event, context):
@@ -114,7 +110,9 @@ def get_task_scraping_abstract() -> Task:
 
     res = dynamodb_types.deserialize_dict(res["Items"][0])
     return Task(
-        kind=res["kind"], params_id=res["params_id"], params=AreaParams(**res["params"])
+        kind=res["kind"],
+        params_id=res["params_id"],
+        params=DSAreaPageNum(**res["params"]),
     )
 
 
@@ -335,6 +333,7 @@ def register_tasks_scraping_detail(ids: list[str]) -> None:
         boto3.client("dynamodb").batch_write_item(
             RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS"]: batch}
         )
+
 
 def delete_task_scraping_abstract(kind: str, params_id: str) -> None:
     """
