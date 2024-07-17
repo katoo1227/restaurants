@@ -1,0 +1,16 @@
+IamPolicyInvokeNotifyNewRestaurants:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsInvokeNotifyNewRestaurantsProd"
+            - "RestaurantsInvokeNotifyNewRestaurantsDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource: !GetAtt "LambdaNotifyNewRestaurants.Arn"
+        Roles:
+            - !Ref "IamRoleInvokeNotifyNewRestaurants"

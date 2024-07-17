@@ -99,6 +99,10 @@ Resources:
     - $file: resources/notify_new_restaurants/iam_role.yml
     - $file: resources/notify_new_restaurants/iam_policy.yml
 
+    # EventBridge - 新規の飲食店通知
+    - $file: resources/invoke_notify_new_restaurants/iam_role.yml
+    - $file: resources/invoke_notify_new_restaurants/iam_policy.yml
+
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
     - $file: resources/dynamodb/restaurants_areas.yml

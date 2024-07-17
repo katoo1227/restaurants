@@ -20,3 +20,17 @@ LambdaNotifyNewRestaurants:
         Architectures:
             - "arm64"
         Timeout: 30
+
+        Events:
+            EventBridgeScheduleLambdaNotifyNewRestaurants:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 0 ? * SAT *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "NotifyNewRestaurantsProd"
+                        - "NotifyNewRestaurantsDev"
+                    RoleArn: !GetAtt "IamRoleInvokeNotifyNewRestaurants.Arn"
