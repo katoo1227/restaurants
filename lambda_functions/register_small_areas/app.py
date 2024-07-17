@@ -6,6 +6,7 @@ import urllib.parse
 import re
 import dynamodb_types
 from dataclasses import dataclass, asdict
+from ds_area import DSArea
 
 
 @dataclass
@@ -21,31 +22,10 @@ class EventParam:
             raise Exception("middle_area_codeが不正です。")
 
 
-@dataclass
-class SmallArea:
-    """
-    小エリア構造体
-    """
-
-    large_service_area_code: str
-    large_service_area_name: str
-    service_area_code: str
-    service_area_name: str
-    large_area_code: str
-    large_area_name: str
-    middle_area_code: str
-    middle_area_name: str
-    small_area_code: str
-    small_area_name: str
-
-    def __post_init__(self):
-        # TODO 正規表現でara_codeのチェック。レイヤー化する
-        pass
-
-
 def lambda_handler(event, context):
 
     try:
+
         # パラメータが不正なら終了
         if "middle_area_code" not in event:
             raise Exception("middle_area_codeがありません。")
@@ -74,7 +54,7 @@ def lambda_handler(event, context):
     }
 
 
-def get_small_areas(code: str) -> list[SmallArea]:
+def get_small_areas(code: str) -> list[DSArea]:
     """
     小エリア一覧を取得
 
@@ -85,7 +65,7 @@ def get_small_areas(code: str) -> list[SmallArea]:
 
     Returns
     -------
-    list[SmallArea]
+    list[DSArea]
     """
     # API URL
     api_url = "https://webservice.recruit.co.jp/hotpepper/small_area/v1/"
@@ -104,7 +84,7 @@ def get_small_areas(code: str) -> list[SmallArea]:
     response = requests.get(api_url)
     data = response.json()
     return [
-        SmallArea(
+        DSArea(
             large_service_area_code=a["large_service_area"]["code"],
             large_service_area_name=a["large_service_area"]["name"],
             service_area_code=a["service_area"]["code"],
@@ -120,13 +100,13 @@ def get_small_areas(code: str) -> list[SmallArea]:
     ]
 
 
-def register_tasks(small_areas: list[SmallArea]) -> None:
+def register_tasks(small_areas: list[DSArea]) -> None:
     """
     タスクを登録
 
     Parameters
     ----------
-    small_areas: list[SmallArea]
+    small_areas: list[DSArea]
         小エリアリスト
     """
     dynamodb = boto3.client("dynamodb")

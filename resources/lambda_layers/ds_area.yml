@@ -1,0 +1,10 @@
+LambdaLayerDsArea:
+    Type: "AWS::Serverless::LayerVersion"
+    Properties:
+        LayerName: !If
+            - "IsProd"
+            - "RestaurantsDSAreaProd"
+            - "RestaurantsDSAreaDev"
+        ContentUri: "./lambda_layers/ds_area/"
+        CompatibleRuntimes:
+            - "python3.10"
