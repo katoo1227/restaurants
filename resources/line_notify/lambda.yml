@@ -8,7 +8,7 @@ LambdaLineNotify:
             - "RestaurantsLineNotifyProd"
             - "RestaurantsLineNotifyDev"
         Role: !GetAtt "IamRoleLineNotify.Arn"
-        Runtime: "python3.10"
+        Runtime: "python3.12"
         Architectures:
             - "arm64"
         Timeout: 30
