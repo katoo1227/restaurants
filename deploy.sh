@@ -33,8 +33,17 @@ yml_path="$(pwd)/template.yml"
 # 「$file: ~~」をテンプレートにコピー
 yq '(.. | select(has("$file"))) |= load(.$file) | .Resources = (.Resources[] as $item ireduce ({}; . * $item))' "$base_path" > "$yml_path"
 
+# 各パラメータの値
+environment_type=$1
+task_name_register_pages="RegisterPages${input^}"
+task_name_scraping_abstract="ScrapingAbstract${input^}"
+task_name_scraping_detail="ScrapingDetail${input^}"
+
 # ビルドとデプロイ
 sam build --template-file ./template.yml
 sam deploy \
     --config-env=$1 \
-    --parameter-overrides EnvironmentType=$1
+    --parameter-overrides EnvironmentType=$1 \
+        TaskNameRegisterPages=$task_name_register_pages \
+        TaskNameScrapingAbstract=$task_name_scraping_abstract \
+        TaskNameScrapingDetail=$task_name_scraping_detail
