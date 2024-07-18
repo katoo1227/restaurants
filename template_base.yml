@@ -10,17 +10,14 @@ Parameters:
     # タスク名 - ページごとのタスク登録
     TaskNameRegisterPages:
         Type: "String"
-        Default: "RegisterPages"
 
     # タスク名 - 概要情報スクレイピング
     TaskNameScrapingAbstract:
         Type: "String"
-        Default: "ScrapingAbstract"
 
     # タスク名 - 詳細情報スクレイピング
     TaskNameScrapingDetail:
         Type: "String"
-        Default: "ScrapingDetail"
 
 Conditions:
     # 本番環境かどうか
