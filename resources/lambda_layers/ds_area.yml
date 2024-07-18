@@ -7,4 +7,4 @@ LambdaLayerDsArea:
             - "RestaurantsDSAreaDev"
         ContentUri: "./lambda_layers/ds_area/"
         CompatibleRuntimes:
-            - "python3.10"
+            - "python3.12"

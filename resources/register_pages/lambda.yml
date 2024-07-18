@@ -7,7 +7,7 @@ LambdaRegisterPages:
             - "RestaurantsRegisterPagesProd"
             - "RestaurantsRegisterPagesDev"
         Role: !GetAtt "IamRoleRegisterPages.Arn"
-        Runtime: "python3.10"
+        Runtime: "python3.12"
         Layers:
             - !Ref "LambdaLayerDynamodbTypes"
             - !Ref "LambdaLayerDsArea"
