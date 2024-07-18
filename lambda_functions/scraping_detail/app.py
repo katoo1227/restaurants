@@ -91,7 +91,7 @@ def delete_schedule() -> None:
     """
     payload = {"task": "delete", "name": os.environ["NAME_TASK_SCRAPING_DETAIL"]}
     boto3.client("lambda").invoke(
-        FunctionName=os.environ["NAME_LAMBDA_HANDLER_SCHEDULES"],
+        FunctionName=os.environ["ARN_LAMBDA_HANDLER_SCHEDULES"],
         InvocationType="RequestResponse",
         Payload=json.dumps(payload).encode("utf-8"),
     )
