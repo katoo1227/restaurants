@@ -93,7 +93,7 @@ def delete_schedule() -> None:
     """
     payload = {"task": "delete", "name": os.environ["NAME_TASK_REGISTER_PAGES"]}
     boto3.client("lambda").invoke(
-        FunctionName=os.environ["NAME_LAMBDA_HANDLER_SCHEDULES"],
+        FunctionName=os.environ["ARN_LAMBDA_HANDLER_SCHEDULES"],
         InvocationType="RequestResponse",
         Payload=json.dumps(payload).encode("utf-8"),
     )
@@ -223,7 +223,7 @@ def register_schedule() -> None:
         "invoke_role_arn": os.environ["ARN_IAM_ROLE_INVOKE_SCRAPING_ABSTRACT"],
     }
     boto3.client("lambda").invoke(
-        FunctionName=os.environ["NAME_LAMBDA_HANDLER_SCHEDULES"],
+        FunctionName=os.environ["ARN_LAMBDA_HANDLER_SCHEDULES"],
         InvocationType="RequestResponse",
         Payload=json.dumps(payload).encode("utf-8"),
     )

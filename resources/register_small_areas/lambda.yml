@@ -14,7 +14,7 @@ LambdaRegisterSmallAreas:
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                NAME_LAMBDA_HANDLER_SCHEDULES: !Ref "LambdaHandlerSchedules"
+                ARN_LAMBDA_HANDLER_SCHEDULES: !Ref "LambdaHandlerSchedules"
                 ARN_LAMBDA_REGISTER_PAGES: !GetAtt "LambdaRegisterPages.Arn"
                 ARN_IAM_ROLE_INVOKE_REGISTER_PAGES: !GetAtt "IamRoleInvokeRegisterPages.Arn"
                 NAME_SCHEDULE_GROUP: !Ref "EventBridgeScheduleGroup"
