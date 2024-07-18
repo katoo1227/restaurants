@@ -113,46 +113,46 @@ Outputs:
     ArnLambdaLineNotify:
         Value: !GetAtt "LambdaLineNotify.Arn"
         Export:
-            Name: "ARN-LambdaLineNotify"
+            Name: !Sub "${AWS::StackName}-LambdaLineNotify"
 
     # エラー共通処理LambdaのARN
     ArnLambdaErrorCommon:
         Value: !GetAtt "LambdaErrorCommon.Arn"
         Export:
-            Name: "ARN-LambdaErrorCommon"
+            Name: !Sub "${AWS::StackName}-LambdaErrorCommon"
 
     # スケジュール登録LambdaのARN
     ArnLambdaHandlerSchedules:
         Value: !GetAtt "LambdaHandlerSchedules.Arn"
         Export:
-            Name: "ARN-LambdaRegisterSchedule"
+            Name: !Sub "${AWS::StackName}-LambdaRegisterSchedule"
 
     # 概要情報スクレイピングタスクの登録（小エリアごと）LambdaのARN
     ArnLambdaRegisterSmallAreas:
         Value: !GetAtt "LambdaRegisterSmallAreas.Arn"
         Export:
-            Name: "ARN-LambdaRegisterSmallAreas"
+            Name: !Sub "${AWS::StackName}-LambdaRegisterSmallAreas"
 
     # 概要情報スクレイピングタスクの登録（ページごと）LambdaのARN
     ArnLambdaRegisterPages:
         Value: !GetAtt "LambdaRegisterPages.Arn"
         Export:
-            Name: "ARN-LambdaRegisterPages"
+            Name: !Sub "${AWS::StackName}-LambdaRegisterPages"
 
     # 概要情報スクレイピングLambdaのARN
     ArnScrapingAbstract:
         Value: !GetAtt "LambdaScrapingAbstract.Arn"
         Export:
-            Name: "ARN-ScrapingAbstract"
+            Name: !Sub "${AWS::StackName}-ScrapingAbstract"
 
     # 詳細情報スクレイピングLambdaのARN
     ArnScrapingDetail:
         Value: !GetAtt "LambdaScrapingDetail.Arn"
         Export:
-            Name: "ARN-ScrapingDetail"
+            Name: !Sub "${AWS::StackName}-ScrapingDetail"
 
     # 新規の飲食店通知LambdaのARN
     ArnNotifyNewRestaurants:
         Value: !GetAtt "LambdaNotifyNewRestaurants.Arn"
         Export:
-            Name: "ARN-NotifyNewRestaurants"
+            Name: !Sub "${AWS::StackName}-NotifyNewRestaurants"

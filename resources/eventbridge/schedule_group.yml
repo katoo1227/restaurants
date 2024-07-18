@@ -3,5 +3,5 @@ EventBridgeScheduleGroup:
     Properties:
         Name: !If
             - "IsProd"
-            - "Restaurants"
+            - "RestaurantsProd"
             - "RestaurantsDev"
