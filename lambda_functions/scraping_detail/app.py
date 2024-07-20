@@ -297,7 +297,6 @@ def update_restaurant(id: str, info: dict) -> None:
     )
     if "Item" not in res:
         raise Exception(f"飲食店データの取得に失敗。{id}のレコードが存在しない。")
-
     res_json = {k: dynamodb_types.deserialize(v) for k, v in res["Item"].items()}
 
     # 1つでもカラムの値が違っていればput対象
@@ -325,6 +324,16 @@ def update_restaurant(id: str, info: dict) -> None:
         item = {
             "id": id,
             "name": info["name"],
+            "large_service_area_code": res_json["large_service_area_code"],
+            "large_service_area_name": res_json["large_service_area_name"],
+            "service_area_code": res_json["service_area_code"],
+            "service_area_name": res_json["service_area_name"],
+            "large_area_code": res_json["large_area_code"],
+            "large_area_name": res_json["large_area_name"],
+            "middle_area_code": res_json["middle_area_code"],
+            "middle_area_name": res_json["middle_area_name"],
+            "small_area_code": res_json["small_area_code"],
+            "small_area_name": res_json["small_area_name"],
             "genre": info["genre"],
             "sub_genre": info["sub_genre"],
             "address": info["address"],
