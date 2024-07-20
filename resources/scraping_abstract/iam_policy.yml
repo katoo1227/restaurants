@@ -21,11 +21,6 @@ IamPolicyScrapingAbstract:
                   Resource: !GetAtt "DynamodbRestaurants.Arn"
                 - Effect: "Allow"
                   Action:
-                      - "dynamodb:BatchWriteItem"
-                  Resource:
-                      - !GetAtt "DynamodbRestaurantsAreas.Arn"
-                - Effect: "Allow"
-                  Action:
                       - "dynamodb:Query"
                       - "dynamodb:DeleteItem"
                       - "dynamodb:BatchWriteItem"

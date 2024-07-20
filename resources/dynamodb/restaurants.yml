@@ -10,6 +10,12 @@ DynamodbRestaurants:
               AttributeType: "S"
             - AttributeName: "is_notified"
               AttributeType: "N"
+            - AttributeName: "middle_area_code"
+              AttributeType: "S"
+            - AttributeName: "latitude"
+              AttributeType: "N"
+            - AttributeName: "longitude"
+              AttributeType: "N"
         KeySchema:
             - AttributeName: "id"
               KeyType: "HASH"
@@ -21,6 +27,28 @@ DynamodbRestaurants:
               KeySchema:
                   - AttributeName: "is_notified"
                     KeyType: "HASH"
+              Projection:
+                  ProjectionType: "ALL"
+              ProvisionedThroughput:
+                  ReadCapacityUnits: 5
+                  WriteCapacityUnits: 5
+            - IndexName: "MiddleAreaCodeLatitudeIndex"
+              KeySchema:
+                  - AttributeName: "middle_area_code"
+                    KeyType: "HASH"
+                  - AttributeName: "latitude"
+                    KeyType: "RANGE"
+              Projection:
+                  ProjectionType: "ALL"
+              ProvisionedThroughput:
+                  ReadCapacityUnits: 5
+                  WriteCapacityUnits: 5
+            - IndexName: "MiddleAreaCodeLongitudeIndex"
+              KeySchema:
+                  - AttributeName: "middle_area_code"
+                    KeyType: "HASH"
+                  - AttributeName: "longitude"
+                    KeyType: "RANGE"
               Projection:
                   ProjectionType: "ALL"
               ProvisionedThroughput:

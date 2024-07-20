@@ -34,16 +34,16 @@ yml_path="$(pwd)/template.yml"
 yq '(.. | select(has("$file"))) |= load(.$file) | .Resources = (.Resources[] as $item ireduce ({}; . * $item))' "$base_path" > "$yml_path"
 
 # 各パラメータの値
-environment_type=$1
-task_name_register_pages="RegisterPages${input^}"
-task_name_scraping_abstract="ScrapingAbstract${input^}"
-task_name_scraping_detail="ScrapingDetail${input^}"
+environment_type=$env
+task_name_register_pages="RegisterPages${env^}"
+task_name_scraping_abstract="ScrapingAbstract${env^}"
+task_name_scraping_detail="ScrapingDetail${env^}"
 
 # ビルドとデプロイ
 sam build --template-file ./template.yml
 sam deploy \
-    --config-env=$1 \
-    --parameter-overrides EnvironmentType=$1 \
+    --config-env=$env \
+    --parameter-overrides EnvironmentType=$env \
         TaskNameRegisterPages=$task_name_register_pages \
         TaskNameScrapingAbstract=$task_name_scraping_abstract \
         TaskNameScrapingDetail=$task_name_scraping_detail

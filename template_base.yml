@@ -27,14 +27,18 @@ Resources:
     # CloudWatchロググループ
     - $file: resources/cloudwatch/log_group.yml
 
+    # EventBridgeスケジュールグループ
+    - $file: resources/eventbridge/schedule_group.yml
+
+    # DynamoDB
+    - $file: resources/dynamodb/restaurants.yml
+    - $file: resources/dynamodb/restaurants_tasks.yml
+
     # Lambdaレイヤー - エリア構造体
     - $file: resources/lambda_layers/ds_area.yml
 
     # Lambdaレイヤー - dynamodb_types
     - $file: resources/lambda_layers/dynamodb_types.yml
-
-    # EventBridgeスケジュールグループ
-    - $file: resources/eventbridge/schedule_group.yml
 
     # Lambda - LINE通知
     - $file: resources/line_notify/lambda.yml
@@ -99,11 +103,6 @@ Resources:
     # EventBridge - 新規の飲食店通知
     - $file: resources/invoke_notify_new_restaurants/iam_role.yml
     - $file: resources/invoke_notify_new_restaurants/iam_policy.yml
-
-    # DynamoDB
-    - $file: resources/dynamodb/restaurants.yml
-    - $file: resources/dynamodb/restaurants_areas.yml
-    - $file: resources/dynamodb/restaurants_tasks.yml
 
 Outputs:
     # LINE通知LambdaのARN

@@ -59,13 +59,7 @@ def lambda_handler(event, context):
         )
 
         # restaurantsへの登録
-        register_restaurants(restaurant_ids)
-
-        # restaurants_areasへの登録
-        register_restaurants_areas(
-            {k: v for k, v in asdict(task.params).items() if k != "page_num"},
-            restaurant_ids,
-        )
+        register_restaurants(restaurant_ids, task.params)
 
         # 詳細情報スクレイピングタスクの登録
         register_tasks_scraping_detail(restaurant_ids)
@@ -182,7 +176,7 @@ def get_restaurant_ids(
     return results
 
 
-def register_restaurants(restaurant_ids: list[str]) -> None:
+def register_restaurants(restaurant_ids: list[str], params: DSAreaPageNum) -> None:
     """
     restaurantsへの登録
 
@@ -216,6 +210,16 @@ def register_restaurants(restaurant_ids: list[str]) -> None:
                     "Item": dynamodb_types.serialize_dict(
                         {
                             "id": id,
+                            "large_service_area_code": params.large_service_area_code,
+                            "large_service_area_name": params.large_service_area_name,
+                            "service_area_code": params.service_area_code,
+                            "service_area_name": params.service_area_name,
+                            "large_area_code": params.large_area_code,
+                            "large_area_name": params.large_area_name,
+                            "middle_area_code": params.middle_area_code,
+                            "middle_area_name": params.middle_area_name,
+                            "small_area_code": params.small_area_code,
+                            "small_area_name": params.small_area_name,
                             "is_notified": 0,
                             "created_at": now,
                             "updated_at": now,
@@ -232,76 +236,6 @@ def register_restaurants(restaurant_ids: list[str]) -> None:
             batch = add_datas[i : i + 25]
             boto3.client("dynamodb").batch_write_item(
                 RequestItems={os.environ["NAME_DYNAMODB_RESTAURANTS"]: batch}
-            )
-
-
-def register_restaurants_areas(event: dict, restaurant_ids: list[str]):
-    """
-    restaurants_areasテーブルの登録
-
-    Parameters
-    ----------
-    event: dict
-        large_service_area_code: str
-            大サービスエリアコード
-        large_service_area_name: str
-            大サービスエリア名
-        service_area_code: str
-            サービスエリアコード
-        service_area_name: str
-            サービスエリア名
-        large_area_code: str
-            大エリアコード
-        large_area_name: str
-            大エリア名
-        middle_area_code: str
-            中エリアコード
-        middle_area_name: str
-            中エリア名
-        small_area_code: str
-            小エリアコード
-        small_area_name: str
-            小エリア名
-    restaurant_ids: list
-        飲食店IDリスト
-    """
-
-    # 1回につき100レコードを最大とするために分割する
-    # 数が多いとバリデーションエラーとなる模様
-    restaurant_ids_list = [
-        restaurant_ids[i : i + 5] for i in range(0, len(restaurant_ids), 5)
-    ]
-
-    # 更新データの作成
-    area_categories = ["large_service", "service", "large", "middle", "small"]
-    for ac in area_categories:
-        code_key = f"{ac}_area_code"
-        name_key = f"{ac}_area_name"
-        update_datas = []
-        for ids in restaurant_ids_list:
-            for id in ids:
-                update_datas.append(
-                    {
-                        "PutRequest": {
-                            "Item": dynamodb_types.serialize_dict(
-                                {
-                                    "area_category": ac,
-                                    "code_restaurant_id": f"{event[code_key]}#{id}",
-                                    "restaurant_id": id,
-                                    "code": event[code_key],
-                                    "name": event[name_key],
-                                }
-                            )
-                        }
-                    }
-                )
-
-        # DynamoDBの一括更新
-        # batch_write_itemは一度に25件までしか更新できないため
-        for i in range(0, len(update_datas), 25):
-            batch = update_datas[i : i + 25]
-            boto3.client("dynamodb").batch_write_item(
-                RequestItems={os.environ["NAME_DYNAMODB_RESTAURANTS_AREAS"]: batch}
             )
 
 

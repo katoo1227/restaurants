@@ -63,18 +63,20 @@ def write_log(function_name: str, msg: str) -> None:
 
     # ストリームがなければ作成
     res = logs.describe_log_streams(
-        logGroupName=os.environ["NAME_CLOUDWATCH_LOG_GROUP"], limit=1
+        logGroupName=os.environ["NAME_CLOUDWATCH_LOG_GROUP"],
+        logStreamNamePrefix=function_name,
+        limit=1
     )
     if len(res["logStreams"]) == 0:
         logs.create_log_stream(
             logGroupName=os.environ["NAME_CLOUDWATCH_LOG_GROUP"],
-            logStreamName=f"{function_name}",
+            logStreamName=function_name,
         )
 
     # ログの記載
     logs.put_log_events(
         logGroupName=os.environ["NAME_CLOUDWATCH_LOG_GROUP"],
-        logStreamName=f"{function_name}",
+        logStreamName=function_name,
         logEvents=[{"timestamp": int(time.time()) * 1000, "message": msg}],
     )
 

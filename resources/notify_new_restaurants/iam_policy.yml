@@ -21,5 +21,6 @@ IamPolicyNotifyNewRestaurants:
                   Resource:
                       - !GetAtt "DynamodbRestaurants.Arn"
                       - !Sub "${DynamodbRestaurants.Arn}/index/IsNotifiedIndex"
+                      - !Sub "${DynamodbRestaurants.Arn}/index/LatitudeIndex" # 仮
         Roles:
             - !Ref "IamRoleNotifyNewRestaurants"
