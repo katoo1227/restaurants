@@ -1,7 +1,19 @@
 import json
 import boto3
 import os
+import time
 from datetime import datetime
+from dataclasses import dataclass, asdict
+
+
+@dataclass
+class EventParams:
+    """
+    イベントパラメータ構造体
+    """
+
+    function_name: str
+    msg: str
 
 
 def lambda_handler(event, context):
@@ -9,18 +21,18 @@ def lambda_handler(event, context):
     try:
 
         # パラメータチェック
-        check_params(event)
+        params = EventParams(**event)
 
         # メッセージ内容
         msg = f"""
-{event["msg"]}
+{params.msg}
 
-関数名：{event["function_name"]}
-イベント：{json.dumps(event)}
+関数名：{params.function_name}
+イベント：{json.dumps(asdict(params))}
 """
 
-        # S3バケットへのファイル追加
-        put_file(event["function_name"], msg)
+        # ログ記載
+        write_log(params.function_name, msg)
 
         # line_notifyの実行
         line_notify(msg)
@@ -35,36 +47,35 @@ def lambda_handler(event, context):
     }
 
 
-def check_params(event: dict):
+def write_log(function_name: str, msg: str) -> None:
     """
-    パラメータチェック
+    CloudWatchログに記載
 
     Parameters
     ----------
-    event: dict
+        function_name: str
+            エラーが発生したLambda関数名
+        msg: str
+            メッセージ
     """
-    for key in ["function_name", "msg"]:
-        if key not in event:
-            raise Exception(f"{key}が指定されていません。{json.dumps(event)}")
-        if type(event[key]) != str:
-            raise Exception(f"{key}の値がstringではありません。{json.dumps(event)}")
+    # Boto3 クライアント
+    logs = boto3.client("logs")
 
+    # ストリームがなければ作成
+    res = logs.describe_log_streams(
+        logGroupName=os.environ["NAME_CLOUDWATCH_LOG_GROUP"], limit=1
+    )
+    if len(res["logStreams"]) == 0:
+        logs.create_log_stream(
+            logGroupName=os.environ["NAME_CLOUDWATCH_LOG_GROUP"],
+            logStreamName=f"{function_name}",
+        )
 
-def put_file(function_name: str, msg: str) -> None:
-    """
-    S3へファイルを追加
-
-    Parameters
-    ----------
-    function_name: str
-        エラーが起きたLambda関数名
-    msg: str
-        エラーメッセージ
-    """
-    # ファイル名
-    file_name = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_{function_name}.txt"
-    boto3.client("s3").put_object(
-        Bucket=os.environ["NAME_S3_BUCKET_ERROR_LOGS"], Key=file_name, Body=msg
+    # ログの記載
+    logs.put_log_events(
+        logGroupName=os.environ["NAME_CLOUDWATCH_LOG_GROUP"],
+        logStreamName=f"{function_name}",
+        logEvents=[{"timestamp": int(time.time()) * 1000, "message": msg}],
     )
 
 
