@@ -11,7 +11,7 @@ LambdaErrorCommon:
         Environment:
             Variables:
                 ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
-                NAME_S3_BUCKET_ERROR_LOGS: !Ref "S3ErrorLogs"
+                NAME_CLOUDWATCH_LOG_GROUP: !Ref "CloudWatchLogGroup"
         Runtime: "python3.12"
         Architectures:
             - "arm64"

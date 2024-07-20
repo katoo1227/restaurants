@@ -14,10 +14,9 @@ IamPolicyErrorCommon:
                   Resource: !GetAtt "LambdaLineNotify.Arn"
                 - Effect: "Allow"
                   Action:
-                      - "s3:GetObject"
-                      - "s3:PutObject"
-                      - "s3:ListBucket"
-                  Resource:
-                      - !GetAtt "S3ErrorLogs.Arn"
+                      - logs:DescribeLogStreams
+                      - logs:CreateLogStream
+                      - logs:PutLogEvents
+                  Resource: !GetAtt "CloudWatchLogGroup.Arn"
         Roles:
             - !Ref "IamRoleErrorCommon"

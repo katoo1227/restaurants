@@ -1,0 +1,8 @@
+CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+        LogGroupName: !If
+            - "IsProd"
+            - "RestaurantsProd"
+            - "RestaurantsDev"
+        RetentionInDays: 7

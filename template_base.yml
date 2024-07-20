@@ -24,8 +24,8 @@ Conditions:
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
 
 Resources:
-    # S3エラーログ用バケット
-    - $file: resources/s3/error_logs.yml
+    # CloudWatchロググループ
+    - $file: resources/cloudwatch/log_group.yml
 
     # Lambdaレイヤー - エリア構造体
     - $file: resources/lambda_layers/ds_area.yml
