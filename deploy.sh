@@ -47,3 +47,10 @@ sam deploy \
         TaskNameRegisterPages=$task_name_register_pages \
         TaskNameScrapingAbstract=$task_name_scraping_abstract \
         TaskNameScrapingDetail=$task_name_scraping_detail
+
+# S3画像格納バケットに初期フォルダの設置
+stack_name="RestaurantsDeploy${env^}"
+outputs=$(sam list stack-outputs --stack-name $stack_name --output json)
+bucket_name=$(echo $outputs | jq -r --arg key "NameImagesBucket" '.[] | select(.OutputKey == $key) | .OutputValue')
+aws s3api put-object --bucket "$bucket_name" --key "thumbnails/"
+aws s3api put-object --bucket "$bucket_name" --key "images/"

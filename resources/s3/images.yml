@@ -1,0 +1,7 @@
+S3Images:
+    Type: "AWS::S3::Bucket"
+    Properties:
+        BucketName: !If
+            - "IsProd"
+            - "katoo1227-restaurants-images-prod"
+            - "katoo1227-restaurants-images-dev"
