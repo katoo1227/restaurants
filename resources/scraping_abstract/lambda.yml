@@ -19,6 +19,7 @@ LambdaScrapingAbstract:
                 ARN_LAMBDA_SCRAPING_DETAIL: !GetAtt "LambdaScrapingDetail.Arn"
                 ARN_IAM_ROLE_INVOKE_SCRAPING_DETAIL: !GetAtt "IamRoleInvokeScrapingDetail.Arn"
                 ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
+                NAME_IMAGES_BUCKET: !Ref "S3Images"
                 NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
                 NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
         Handler: "app.lambda_handler"

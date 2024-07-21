@@ -34,6 +34,12 @@ class Task:
     params: DSAreaPageNum | IdParams
 
 
+@dataclass
+class Abstract:
+    id: str
+    thumbnail_url: str
+
+
 def lambda_handler(event, context):
 
     success_response = {
@@ -51,14 +57,18 @@ def lambda_handler(event, context):
             return success_response
 
         # 概要情報の取得
-        restaurant_ids = get_restaurant_ids(
+        abstracts = get_abstract_info(
             task.params.service_area_code,
             task.params.middle_area_code,
             task.params.small_area_code,
             task.params.page_num,
         )
 
+        # サムネ画像をS3へ保存
+        put_thumbnails(abstracts)
+
         # restaurantsへの登録
+        restaurant_ids = [a.id for a in abstracts]
         register_restaurants(restaurant_ids, task.params)
 
         # 詳細情報スクレイピングタスクの登録
@@ -122,9 +132,9 @@ def delete_schedule() -> None:
     )
 
 
-def get_restaurant_ids(
+def get_abstract_info(
     service_area_code: str, middle_area_code: str, small_area_code: str, page_num: int
-) -> list[str]:
+) -> list[Abstract]:
     """
     概要情報を取得
 
@@ -141,8 +151,7 @@ def get_restaurant_ids(
 
     Returns
     -------
-    list
-        飲食店IDリスト
+    list[Abstract]
     """
     # URL
     url_arr = [
@@ -160,20 +169,58 @@ def get_restaurant_ids(
     html = requests.get(url)
     soup = BeautifulSoup(html.content, "html.parser")
 
-    # 飲食店名リンクを取得
-    links = soup.select(".shopDetailStoreName a")
-    if len(links) == 0:
-        raise Exception(f"「.shopDetailStoreName a」が存在しません。{url}")
+    restaurants = soup.select(".shopDetailCoreInner")
+    if len(restaurants) == 0:
+        raise Exception(f"「.shopDetailCoreInner」が存在しません。{url}")
 
-    # 結果配列を作成
+    # サムネ画像と飲食店IDを取得
     results = []
-    for a in links:
-        match = re.search(r"/str(J\d+)/", a.get("href"))
+    for r in restaurants:
+        # サムネ画像
+        thumbnail_url = ""
+        img = r.select_one(".shopPhotoMain img")
+        if img is not None:
+            thumbnail_url = img.get("src")
+
+        # 飲食店ID
+        link = r.select_one(".shopDetailStoreName a")
+        if link is None:
+            raise Exception(f"「.shopDetailStoreName a」が存在しません。{url}")
+        match = re.search(r"/str(J\d+)/", link.get("href"))
         if match is None:
-            raise Exception(f"飲食店IDの取得に失敗しました。{str(a)}")
-        results.append(match.group(1))
+            raise Exception(f"飲食店IDの取得に失敗しました。{str(link)}")
+        id = match.group(1)
+        try:
+            results.append(
+                Abstract(
+                    id=id,
+                    thumbnail_url=thumbnail_url,
+                )
+            )
+        except Exception as e:
+            print(e)
 
     return results
+
+
+def put_thumbnails(abstracts: list[Abstract]) -> None:
+    """
+    サムネ画像をS3へ保存
+
+    Parameters
+    ----------
+    abstracts: list[Abstract]
+    """
+    for a in abstracts:
+        if a.thumbnail_url == "":
+            continue
+        img = requests.get(a.thumbnail_url)
+        _, ext = os.path.splitext(a.thumbnail_url)
+        boto3.client("s3").put_object(
+            Bucket=os.environ["NAME_IMAGES_BUCKET"],
+            Key=f"thumbnails/{a.id}{ext}",
+            Body=img.content,
+        )
 
 
 def register_restaurants(restaurant_ids: list[str], params: DSAreaPageNum) -> None:

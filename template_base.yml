@@ -30,6 +30,9 @@ Resources:
     # EventBridgeスケジュールグループ
     - $file: resources/eventbridge/schedule_group.yml
 
+    # S3 - 画像格納バケット
+    - $file: resources/s3/images.yml
+
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
     - $file: resources/dynamodb/restaurants_tasks.yml
@@ -152,3 +155,9 @@ Outputs:
         Value: !GetAtt "LambdaNotifyNewRestaurants.Arn"
         Export:
             Name: !Sub "${AWS::StackName}-NotifyNewRestaurants"
+
+    # S3画像格納バケット名
+    NameImagesBucket:
+        Value: !Ref "S3Images"
+        Export:
+            Name: !Sub "${AWS::StackName}-ImagesBucketName"
