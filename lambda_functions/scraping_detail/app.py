@@ -2,6 +2,7 @@ import boto3
 import os
 import json
 import requests
+import time
 import urllib.parse
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -38,6 +39,9 @@ def lambda_handler(event, context):
         if task == {}:
             delete_schedule()
             return success_response
+
+        # S3へ画像をアップロード
+        put_images(task.params.id)
 
         # 詳細情報の取得
         info = get_detail_info(task.params.id)
@@ -95,6 +99,69 @@ def delete_schedule() -> None:
         InvocationType="RequestResponse",
         Payload=json.dumps(payload).encode("utf-8"),
     )
+
+
+def put_images(id: str) -> None:
+    """
+    飲食店画像をS3へ保存
+
+    Parameters
+    ----------
+    id: str
+        飲食店ID
+    """
+
+    s3 = boto3.client("s3")
+    # URL
+    url = f"https://www.hotpepper.jp/str{id}/photo/"
+
+    # HTMLを取得
+    html = requests.get(url)
+
+    # ステータスが404の場合は画像がないので既存の画像を削除
+    if html.status_code == 404:
+        res = s3.list_objects_v2(
+            Bucket=os.environ["NAME_IMAGES_BUCKET"], Prefix=f"images/{id}/"
+        )
+        # もともとなければ何もしない
+        if "Contents" not in res:
+            return
+
+        # フォルダごと削除
+        delete_objects = [{"Key": obj["Key"]} for obj in res["Contents"]]
+        s3.delete_objects(
+            Bucket=os.environ["NAME_IMAGES_BUCKET"], Delete={"Objects": delete_objects}
+        )
+        return
+
+    # HTML解析
+    soup = BeautifulSoup(html.content, "html.parser")
+    image_lis = soup.select(".jsc-photo-list")
+    image_lis_len = len(image_lis)
+    if image_lis_len == 0:
+        raise Exception(f"飲食店画像一覧の取得に失敗。{id}")
+    for i in range(image_lis_len):
+        img_path = image_lis[i].get("data-src")
+
+        # 画像URLの取得
+        if img_path is None:
+            raise Exception(f"飲食店画像URLの取得に失敗。{str(li)}")
+        image = requests.get(f"https://www.hotpepper.jp{img_path}")
+        if image.status_code != 200:
+            raise Exception(f"飲食店画像の取得に失敗。{img_path}")
+
+        # S3へ保存
+        _, ext = os.path.splitext(img_path)
+        boto3.client("s3").put_object(
+            Bucket=os.environ["NAME_IMAGES_BUCKET"],
+            Key=f"images/{id}/{i + 1}{ext}",
+            Body=image.content,
+        )
+
+        # 最後でなければ1秒待つ
+        if i + 1 != image_lis_len:
+            print(i + 1)
+            time.sleep(1)
 
 
 def get_detail_info(id: str) -> dict:
@@ -310,7 +377,7 @@ def update_restaurant(id: str, info: dict) -> None:
         "longitude",
         "open_hours",
         "close_days",
-        "parking"
+        "parking",
     ]
     for c in update_columns:
         if c not in res_json or info[c] != res_json[c]:

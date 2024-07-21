@@ -14,6 +14,7 @@ LambdaScrapingDetail:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
                 ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
+                NAME_IMAGES_BUCKET: !Ref "S3Images"
                 NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
                 NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
                 NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
@@ -24,4 +25,4 @@ LambdaScrapingDetail:
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
-        Timeout: 30
+        Timeout: 120
