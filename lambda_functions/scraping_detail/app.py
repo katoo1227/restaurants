@@ -112,7 +112,8 @@ def put_images(id: str) -> None:
     """
 
     s3 = boto3.client("s3")
-    # URL
+
+    # 写真一覧URL
     url = f"https://www.hotpepper.jp/str{id}/photo/"
 
     # HTMLを取得
@@ -120,10 +121,10 @@ def put_images(id: str) -> None:
 
     # ステータスが404の場合は画像がないので既存の画像を削除
     if html.status_code == 404:
+        # もともとなければ何もしない
         res = s3.list_objects_v2(
             Bucket=os.environ["NAME_IMAGES_BUCKET"], Prefix=f"images/{id}/"
         )
-        # もともとなければ何もしない
         if "Contents" not in res:
             return
 
@@ -136,22 +137,43 @@ def put_images(id: str) -> None:
 
     # HTML解析
     soup = BeautifulSoup(html.content, "html.parser")
-    image_lis = soup.select(".jsc-photo-list")
-    image_lis_len = len(image_lis)
-    if image_lis_len == 0:
+
+    # 「.jsc-photo-list」での検索
+    is_jsc_photo_list = False
+    jsc_photo_list = soup.select(".jsc-photo-list")
+    jsc_photo_list_len = len(jsc_photo_list)
+    if jsc_photo_list_len != 0:
+        is_jsc_photo_list = True
+
+    # 「.jsc-photo-list-elm」での検索
+    is_jsc_photo_list_elm = False
+    jsc_photo_list_elm = soup.select(".jsc-photo-list-elm")
+    jsc_photo_list_elm_len = len(jsc_photo_list_elm)
+    if jsc_photo_list_elm_len != 0:
+        is_jsc_photo_list_elm = True
+
+    # いずれも取得できていなければエラー
+    if is_jsc_photo_list == False and is_jsc_photo_list_elm == False:
         raise Exception(f"飲食店画像一覧の取得に失敗。{id}")
-    for i in range(image_lis_len):
-        img_path = image_lis[i].get("data-src")
 
-        # 画像URLの取得
-        if img_path is None:
-            raise Exception(f"飲食店画像URLの取得に失敗。{str(li)}")
-        image = requests.get(f"https://www.hotpepper.jp{img_path}")
+    # 画像URLを格納
+    img_urls = []
+    if is_jsc_photo_list:
+        for i, elm in enumerate(jsc_photo_list):
+            img_path = elm.get("data-src")
+            if img_path is None:
+                raise Exception(f"飲食店画像URLの取得に失敗。{str(elm)}")
+            img_urls.append(f"https://www.hotpepper.jp{img_path}")
+    if is_jsc_photo_list_elm:
+        img_urls = [e.get("data-src") for e in jsc_photo_list_elm]
+
+    # 画像を取得して保存
+    img_urls_len = len(img_urls)
+    for i, url in enumerate(img_urls):
+        image = requests.get(url)
         if image.status_code != 200:
-            raise Exception(f"飲食店画像の取得に失敗。{img_path}")
-
-        # S3へ保存
-        _, ext = os.path.splitext(img_path)
+            raise Exception(f"飲食店画像の取得に失敗。id: {id}, url: {url}")
+        _, ext = os.path.splitext(url)
         boto3.client("s3").put_object(
             Bucket=os.environ["NAME_IMAGES_BUCKET"],
             Key=f"images/{id}/{i + 1}{ext}",
@@ -159,8 +181,7 @@ def put_images(id: str) -> None:
         )
 
         # 最後でなければ1秒待つ
-        if i + 1 != image_lis_len:
-            print(i + 1)
+        if i + 1 != img_urls_len:
             time.sleep(1)
 
 
