@@ -53,6 +53,11 @@ def lambda_handler(event, context):
         delete_task(task.kind, task.params_id)
     except Exception as e:
         payload = {"function_name": context.function_name, "msg": str(e)}
+        # タスクが取れている状況であれば飲食店IDを追加
+        try:
+            payload.params_id = task.params_id
+        except NameError:
+            pass
         boto3.client("lambda").invoke(
             FunctionName=os.environ["ARN_LAMBDA_ERROR_COMMON"],
             InvocationType="RequestResponse",
@@ -134,6 +139,10 @@ def put_images(id: str) -> None:
             Bucket=os.environ["NAME_IMAGES_BUCKET"], Delete={"Objects": delete_objects}
         )
         return
+
+    # TODO
+    # もともと10枚だったが、9枚に減っている場合が考えられる
+    # 一旦全て消したうえで9枚をアップする？
 
     # HTML解析
     soup = BeautifulSoup(html.content, "html.parser")
