@@ -139,10 +139,10 @@ def get_page_num(
         raise Exception(
             f"ページ数の取得に失敗しました。.searchResultPageLink .lh27がありません。"
         )
-    match = re.search(r"1/(\d+)ページ", lh27.text)
+    match = re.search(r"1/([0-9]+)ページ", lh27.text)
     if match is None:
         raise Exception(
-            f"「1/(\d+)ページ」の形でページ数を取得できませんでした。{lh27.text}"
+            f"「1/([0-9]+)ページ」の形でページ数を取得できませんでした。{lh27.text}"
         )
 
     return int(match.group(1))
