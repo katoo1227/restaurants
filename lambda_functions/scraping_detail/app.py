@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import pytz
 import dynamodb_types
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 
 @dataclass
@@ -53,11 +53,6 @@ def lambda_handler(event, context):
         delete_task(task.kind, task.params_id)
     except Exception as e:
         payload = {"function_name": context.function_name, "msg": str(e)}
-        # タスクが取れている状況であれば飲食店IDを追加
-        try:
-            payload.params_id = task.params_id
-        except NameError:
-            pass
         boto3.client("lambda").invoke(
             FunctionName=os.environ["ARN_LAMBDA_ERROR_COMMON"],
             InvocationType="RequestResponse",
@@ -140,10 +135,6 @@ def put_images(id: str) -> None:
         )
         return
 
-    # TODO
-    # もともと10枚だったが、9枚に減っている場合が考えられる
-    # 一旦全て消したうえで9枚をアップする？
-
     # HTML解析
     soup = BeautifulSoup(html.content, "html.parser")
 
@@ -165,33 +156,110 @@ def put_images(id: str) -> None:
     if is_jsc_photo_list == False and is_jsc_photo_list_elm == False:
         raise Exception(f"飲食店画像一覧の取得に失敗。{id}")
 
-    # 画像URLを格納
-    img_urls = []
+    # 画像URLとaltを格納
+    img_infos = []
     if is_jsc_photo_list:
-        for i, elm in enumerate(jsc_photo_list):
+        for elm in jsc_photo_list:
             img_path = elm.get("data-src")
             if img_path is None:
                 raise Exception(f"飲食店画像URLの取得に失敗。{str(elm)}")
-            img_urls.append(f"https://www.hotpepper.jp{img_path}")
+
+            # URLが相対パスの場合と絶対パスの場合がある
+            if img_path.startswith("https://"):
+                img_url = img_path
+            else:
+                img_url = f"https://www.hotpepper.jp{img_path}"
+            img_infos.append({
+                "url": img_url,
+                "alt": elm.get("data-alt")
+            })
     if is_jsc_photo_list_elm:
-        img_urls = [e.get("data-src") for e in jsc_photo_list_elm]
+        for elm in jsc_photo_list_elm:
+            img_infos.append({
+                "url": elm.get("data-src"),
+                "alt": elm.get("data-alt")
+            })
+
+    # 画像テーブルの更新データ
+    update_datas = []
+
+    # もともとの枚数より少なければ、その分を削除
+    dynamodb = boto3.client("dynamodb")
+    res = dynamodb.query(
+        TableName=os.environ["NAME_DYNAMODB_TABLE_IMAGES"],
+        KeyConditionExpression="id = :id",
+        ExpressionAttributeValues={":id": dynamodb_types.serialize(id)},
+        ScanIndexForward=True,
+    )
+    items_len = len(res["Items"])
+    img_infos_len = len(img_infos)
+    if img_infos_len < items_len:
+        # S3内の飲食店画像一覧を取得
+        s3_res = s3.list_objects_v2(
+            Bucket=os.environ["NAME_IMAGES_BUCKET"],
+            Prefix=f"images/{id}",
+        )
+        if "Contents" not in s3_res:
+            raise Exception(f"Imagesバケット内の画像取得に失敗。{f"images/{id}"}")
+        for i in range(items_len - img_infos_len):
+            order = img_infos_len + i + 1
+            d = {
+                "DeleteRequest": {
+                    "Key": dynamodb_types.serialize_dict({
+                        "id": id,
+                        "order": order
+                    })
+                }
+            }
+            update_datas.append(d)
+
+            # S3画像の削除
+            for c in s3_res["Contents"]:
+                if c["Key"].startswith(f"images/{id}/{order}"):
+                    _, ext = os.path.splitext(c["Key"])
+                    s3.delete_object(
+                        Bucket=os.environ["NAME_IMAGES_BUCKET"], Key=f"images/{id}/{order}{ext}"
+                    )
+                    break
 
     # 画像を取得して保存
-    img_urls_len = len(img_urls)
-    for i, url in enumerate(img_urls):
-        image = requests.get(url)
+    for i, img_info in enumerate(img_infos):
+        image = requests.get(img_info["url"])
         if image.status_code != 200:
-            raise Exception(f"飲食店画像の取得に失敗。id: {id}, url: {url}")
-        _, ext = os.path.splitext(url)
+            raise Exception(f"飲食店画像の取得に失敗。id: {id}, url: {img_info["url"]}")
+        _, ext = os.path.splitext(img_info["url"])
         boto3.client("s3").put_object(
             Bucket=os.environ["NAME_IMAGES_BUCKET"],
             Key=f"images/{id}/{i + 1}{ext}",
             Body=image.content,
         )
+        update_datas.append(
+            {
+                "PutRequest": {
+                    "Item": dynamodb_types.serialize_dict({
+                        "id": id,
+                        "order": i + 1,
+                        "name": img_info["alt"]
+                    })
+                }
+            }
+        )
 
         # 最後でなければ1秒待つ
-        if i + 1 != img_urls_len:
+        if i + 1 != img_infos_len:
             time.sleep(1)
+
+    # 一括更新
+    # batch_write_itemは一度に25件までしか追加できないため
+    if len(update_datas) == 0:
+        return
+    for i in range(0, len(update_datas), 25):
+        batch = update_datas[i : i + 25]
+        boto3.client("dynamodb").batch_write_item(
+            RequestItems={os.environ["NAME_DYNAMODB_TABLE_IMAGES"]: batch}
+        )
+
+    return img_infos_len
 
 
 def get_detail_info(id: str) -> dict:

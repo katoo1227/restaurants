@@ -40,6 +40,19 @@ class Abstract:
     thumbnail_url: str
 
 
+@dataclass
+class UpsertData(DSArea):
+    """
+    upsertデータのベース
+    """
+
+    id: str
+    is_notified: int
+    is_thumbnail: int
+    created_at: str
+    updated_at: str
+
+
 def lambda_handler(event, context):
 
     success_response = {
@@ -68,10 +81,10 @@ def lambda_handler(event, context):
         put_thumbnails(abstracts)
 
         # restaurantsへの登録
-        restaurant_ids = [a.id for a in abstracts]
-        register_restaurants(restaurant_ids, task.params)
+        register_restaurants(abstracts, task.params)
 
         # 詳細情報スクレイピングタスクの登録
+        restaurant_ids = [a.id for a in abstracts]
         register_tasks_scraping_detail(restaurant_ids)
 
         # 概要情報スクレイピングタスクの削除
@@ -210,10 +223,33 @@ def put_thumbnails(abstracts: list[Abstract]) -> None:
     Parameters
     ----------
     abstracts: list[Abstract]
+        概要情報リスト
     """
-    for a in abstracts:
+    s3 = boto3.client("s3")
+    abstracts_len = len(abstracts)
+    for i, a in enumerate(abstracts):
+        # サムネ画像URLがなければもともとの画像を削除
+        # try catchでいきなりdelete_itemの場合、拡張子がjpgとは限らない可能性がある
+        # ファイル名の前方一致でで検索し、あれば削除する
         if a.thumbnail_url == "":
+            res = s3.list_objects_v2(
+                Bucket=os.environ["NAME_IMAGES_BUCKET"],
+                Prefix=f"thumbnails/{a.id}",
+                MaxKeys=1,
+            )
+
+            # なければスキップ
+            if "Contents" not in res:
+                continue
+
+            # ファイルの削除
+            print(res["Contents"][0]["Key"])
+            s3.delete_object(
+                Bucket=os.environ["NAME_IMAGES_BUCKET"], Key=res["Contents"][0]["Key"]
+            )
             continue
+
+        # サムネ画像を取得して保存
         img = requests.get(a.thumbnail_url)
         _, ext = os.path.splitext(a.thumbnail_url)
         boto3.client("s3").put_object(
@@ -222,21 +258,27 @@ def put_thumbnails(abstracts: list[Abstract]) -> None:
             Body=img.content,
         )
 
+        # 最後でなければ1秒待つ
+        if i + 1 != abstracts_len:
+            time.sleep(1)
 
-def register_restaurants(restaurant_ids: list[str], params: DSAreaPageNum) -> None:
+
+def register_restaurants(abstracts: list[Abstract], params: DSAreaPageNum) -> None:
     """
     restaurantsへの登録
 
     Parameters
     ----------
-    restaurant_ids: list
-        飲食店IDリスト
+    abstracts: list[Abstract]
+        概要情報リスト
+    params: DSAreaPageNum
+        page_num付きエリアパラメータ
     """
     dynamodb = boto3.client("dynamodb")
     table_name = os.environ["NAME_DYNAMODB_RESTAURANTS"]
 
     # パーティションキーで検索
-    ids = [{"id": dynamodb_types.serialize(id)} for id in restaurant_ids]
+    ids = [{"id": dynamodb_types.serialize(a.id)} for a in abstracts]
     id_res = dynamodb.batch_get_item(RequestItems={table_name: {"Keys": ids}})
     records = id_res["Responses"][table_name]
 
@@ -244,46 +286,88 @@ def register_restaurants(restaurant_ids: list[str], params: DSAreaPageNum) -> No
     tz = pytz.timezone("Asia/Tokyo")
     now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
-    # 追加データの作成
-    add_datas = []
-    record_ids = [dynamodb_types.serialize(r["id"]) for r in records]
-    for id in restaurant_ids:
-        # 登録済みであれば、上書きさせないためスキップ
-        if id in record_ids:
-            continue
-        add_datas.append(
+    # upsertデータの作成
+    upsert_datas = []
+    for a in abstracts:
+
+        # upsertデータのベースdict
+        upsert_base = {
+            "id": a.id,
+            "large_service_area_code": params.large_service_area_code,
+            "large_service_area_name": params.large_service_area_name,
+            "service_area_code": params.service_area_code,
+            "service_area_name": params.service_area_name,
+            "large_area_code": params.large_area_code,
+            "large_area_name": params.large_area_name,
+            "middle_area_code": params.middle_area_code,
+            "middle_area_name": params.middle_area_name,
+            "small_area_code": params.small_area_code,
+            "small_area_name": params.small_area_name,
+            "is_thumbnail": a.thumbnail_url != "",
+            "updated_at": now,
+        }
+
+        # レコードが存在しているか
+        record_row = None
+        for r in records:
+            item = dynamodb_types.deserialize_dict(r)
+            if a.id == item["id"]:
+                record_row = item
+                break
+
+        is_thumbnail = a.thumbnail_url != ""
+
+        if record_row is None:
+            # レコードがないので追加対象
+            upsert_add = {
+                "is_notified": 0,
+                "created_at": now,
+            }
+            upsert_data = upsert_base | upsert_add
+        else:
+            # カラムが不足or値が違えば更新対象
+            is_update = False
+            for key in asdict(params).keys():
+                if key not in record_row or record_row[key] != getattr(params, key):
+                    is_update = True
+                    break
+            else:
+                if (
+                    "is_thumbnail" not in record_row
+                    or record_row["is_thumbnail"] != is_thumbnail
+                ):
+                    is_update = True
+            if is_update == False:
+                continue
+
+            # upsertデータの作成
+            upsert_add = {
+                "is_notified": record_row["is_notified"],
+                "created_at": record_row["created_at"],
+            }
+            upsert_data = upsert_base | upsert_add
+
+        # upsertデータへ追加
+        # 構造体を通すことで、型やキーのチェックができる
+        upsert_datas.append(
             {
                 "PutRequest": {
                     "Item": dynamodb_types.serialize_dict(
-                        {
-                            "id": id,
-                            "large_service_area_code": params.large_service_area_code,
-                            "large_service_area_name": params.large_service_area_name,
-                            "service_area_code": params.service_area_code,
-                            "service_area_name": params.service_area_name,
-                            "large_area_code": params.large_area_code,
-                            "large_area_name": params.large_area_name,
-                            "middle_area_code": params.middle_area_code,
-                            "middle_area_name": params.middle_area_name,
-                            "small_area_code": params.small_area_code,
-                            "small_area_name": params.small_area_name,
-                            "is_notified": 0,
-                            "created_at": now,
-                            "updated_at": now,
-                        }
+                        asdict(UpsertData(**upsert_data))
                     )
                 }
             }
         )
 
-    # DynamoDBへの追加
+    # 一括upsert
     # batch_write_itemは一度に25件までしか追加できないため
-    if len(add_datas) > 0:
-        for i in range(0, len(add_datas), 25):
-            batch = add_datas[i : i + 25]
-            boto3.client("dynamodb").batch_write_item(
-                RequestItems={os.environ["NAME_DYNAMODB_RESTAURANTS"]: batch}
-            )
+    if len(upsert_datas) == 0:
+        return
+    for i in range(0, len(upsert_datas), 25):
+        batch = upsert_datas[i : i + 25]
+        boto3.client("dynamodb").batch_write_item(
+            RequestItems={os.environ["NAME_DYNAMODB_RESTAURANTS"]: batch}
+        )
 
 
 def register_tasks_scraping_detail(ids: list[str]) -> None:

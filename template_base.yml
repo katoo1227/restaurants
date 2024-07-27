@@ -35,6 +35,7 @@ Resources:
 
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
+    - $file: resources/dynamodb/restaurants_images.yml
     - $file: resources/dynamodb/restaurants_tasks.yml
 
     # Lambdaレイヤー - エリア構造体

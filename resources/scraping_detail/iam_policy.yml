@@ -32,8 +32,13 @@ IamPolicyScrapingDetail:
                   Action:
                       - "dynamodb:Query"
                       - "dynamodb:DeleteItem"
-                  Resource:
-                      - !GetAtt "DynamodbRestaurantsTasks.Arn"
+                  Resource: !GetAtt "DynamodbRestaurantsTasks.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:DeleteItem"
+                      - "dynamodb:BatchWriteItem"
+                  Resource: !GetAtt "DynamodbRestaurantsImages.Arn"
                 - Effect: "Allow"
                   Action:
                       - "ssm:GetParameter"

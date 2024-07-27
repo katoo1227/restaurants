@@ -18,6 +18,7 @@ LambdaScrapingDetail:
                 NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
                 NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
                 NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
+                NAME_DYNAMODB_TABLE_IMAGES: !Ref "DynamodbRestaurantsImages"
                 NAME_PARAMETER_API_KEY_GOOGLE_GEOCODING: !If
                     - "IsProd"
                     - "/google/geocoding/prod/key"
@@ -25,4 +26,4 @@ LambdaScrapingDetail:
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
-        Timeout: 120
+        Timeout: 600
