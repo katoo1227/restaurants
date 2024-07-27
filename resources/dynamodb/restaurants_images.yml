@@ -1,0 +1,20 @@
+DynamodbRestaurantsImages:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+        TableName: !If
+            - "IsProd"
+            - "RestaurantsImagesProd"
+            - "RestaurantsImagesDev"
+        AttributeDefinitions:
+            - AttributeName: "id"
+              AttributeType: "S"
+            - AttributeName: "order"
+              AttributeType: "N"
+        KeySchema:
+            - AttributeName: "id"
+              KeyType: "HASH"
+            - AttributeName: "order"
+              KeyType: "RANGE"
+        ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5

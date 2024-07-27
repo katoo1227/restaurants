@@ -25,4 +25,4 @@ LambdaScrapingAbstract:
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
-        Timeout: 30
+        Timeout: 120
