@@ -1,10 +1,10 @@
-IamPolicyNotifyNewRestaurants:
+IamPolicyGetRestaurants:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsNotifyNewRestaurantsProd"
-            - "RestaurantsNotifyNewRestaurantsDev"
+            - "RestaurantsGetRestaurantsProd"
+            - "RestaurantsGetRestaurantsDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -13,13 +13,11 @@ IamPolicyNotifyNewRestaurants:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
-                      - !GetAtt "LambdaLineNotify.Arn"
                 - Effect: "Allow"
                   Action:
                       - "dynamodb:Query"
-                      - "dynamodb:BatchWriteItem"
                   Resource:
-                      - !GetAtt "DynamodbRestaurants.Arn"
-                      - !Sub "${DynamodbRestaurants.Arn}/index/IsNotifiedIndex"
+                      - !Sub "${DynamodbRestaurants.Arn}/index/MiddleAreaCodeLatitudeIndex"
+                      - !Sub "${DynamodbRestaurants.Arn}/index/MiddleAreaCodeLongitudeIndex"
         Roles:
-            - !Ref "IamRoleNotifyNewRestaurants"
+            - !Ref "IamRoleGetRestaurants"

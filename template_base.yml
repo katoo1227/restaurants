@@ -19,6 +19,11 @@ Parameters:
     TaskNameScrapingDetail:
         Type: "String"
 
+    # ARN - ACMのSSL証明書
+    ArnAcmSslCertficate:
+        Type: "String"
+
+
 Conditions:
     # 本番環境かどうか
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
@@ -37,6 +42,12 @@ Resources:
     - $file: resources/dynamodb/restaurants.yml
     - $file: resources/dynamodb/restaurants_images.yml
     - $file: resources/dynamodb/restaurants_tasks.yml
+
+    # Route53 - バックエンド
+    - $file: resources/route53/backend.yml
+
+    # APIGateway - バックエンド
+    - $file: resources/apigateway/backend.yml
 
     # Lambdaレイヤー - エリア構造体
     - $file: resources/lambda_layers/ds_area.yml
@@ -108,6 +119,11 @@ Resources:
     - $file: resources/invoke_notify_new_restaurants/iam_role.yml
     - $file: resources/invoke_notify_new_restaurants/iam_policy.yml
 
+    # Lambda - 飲食店一覧情報を取得
+    - $file: resources/get_restaurants/lambda.yml
+    - $file: resources/get_restaurants/iam_role.yml
+    - $file: resources/get_restaurants/iam_policy.yml
+
 Outputs:
     # LINE通知LambdaのARN
     ArnLambdaLineNotify:
@@ -156,6 +172,12 @@ Outputs:
         Value: !GetAtt "LambdaNotifyNewRestaurants.Arn"
         Export:
             Name: !Sub "${AWS::StackName}-NotifyNewRestaurants"
+
+    # 飲食店一覧情報の取得LambdaのARN
+    ArnGetRestaurants:
+        Value: !GetAtt "LambdaGetRestaurants.Arn"
+        Export:
+            Name: !Sub "${AWS::StackName}-GetRestaurants"
 
     # S3画像格納バケット名
     NameImagesBucket:
