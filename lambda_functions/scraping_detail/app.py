@@ -8,7 +8,8 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import pytz
 import dynamodb_types
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
+from http.client import RemoteDisconnected
 
 
 @dataclass
@@ -120,7 +121,7 @@ def put_images(id: str) -> None:
     html = requests.get(url)
 
     # ステータスが404の場合は画像がないので既存の画像を削除
-    if html.status_code == 404:
+    if html.status_code != 200:
         # もともとなければ何もしない
         res = s3.list_objects_v2(
             Bucket=os.environ["NAME_IMAGES_BUCKET"], Prefix=f"images/{id}/"
@@ -136,7 +137,10 @@ def put_images(id: str) -> None:
         return
 
     # HTML解析
-    soup = BeautifulSoup(html.content, "html.parser")
+    try:
+        soup = BeautifulSoup(html.content, "html.parser")
+    except RemoteDisconnected as e:
+        raise Exception(f"{e}\n{url}")
 
     # 「.jsc-photo-list」での検索
     is_jsc_photo_list = False
@@ -311,7 +315,10 @@ def get_detail_info(id: str) -> dict:
 
     # HTML解析
     html = requests.get(url)
-    soup = BeautifulSoup(html.content, "html.parser")
+    try:
+        soup = BeautifulSoup(html.content, "html.parser")
+    except RemoteDisconnected as e:
+        raise Exception(f"{e}\n{url}")
 
     # 飲食店名
     name_dom = soup.select_one("h1.shopName")
