@@ -120,7 +120,7 @@ def put_images(id: str) -> None:
     # HTMLを取得
     html = requests.get(url)
 
-    # ステータスが404の場合は画像がないので既存の画像を削除
+    # ステータスが200以外の場合は画像がないので既存の画像を削除
     if html.status_code != 200:
         # もともとなければ何もしない
         res = s3.list_objects_v2(
@@ -515,6 +515,7 @@ def update_restaurant(id: str, info: dict) -> None:
             "close_days": info["close_days"],
             "parking": info["parking"],
             "is_notified": res_json["is_notified"],
+            "is_thumbnail": res_json["is_thumbnail"],
             "created_at": res_json["created_at"],
             "updated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
         }
