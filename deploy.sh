@@ -11,6 +11,18 @@
 # Examples:
 #   bash deploy.sh dev
 
+# ACMのSSL証明書ARNを取得
+get_certificated_arn() {
+    # arn=$(aws acm list-certificates --region "us-east-1" | jq -r '.CertificateSummaryList[] | select(.DomainName == "*.katoo1227.net") | .CertificateArn')
+    arn=$(aws acm list-certificates --region "ap-northeast-1" | jq -r '.CertificateSummaryList[] | select(.DomainName == "*.katoo1227.net") | .CertificateArn')
+    if [ -z "$arn" ]; then
+        echo ACM SSL Certificate was not found.
+        exit 1
+    fi
+    echo "$arn"
+    exit 0
+}
+
 # 引数が1つでないと終了
 if [ $# -ne 1 ]; then
     echo "ex)bash deploy.sh dev"
@@ -38,6 +50,7 @@ environment_type=$env
 task_name_register_pages="RegisterPages${env^}"
 task_name_scraping_abstract="ScrapingAbstract${env^}"
 task_name_scraping_detail="ScrapingDetail${env^}"
+certificated_arn=$(get_certificated_arn)
 
 # ビルドとデプロイ
 sam build --template-file ./template.yml
@@ -46,7 +59,8 @@ sam deploy \
     --parameter-overrides EnvironmentType=$env \
         TaskNameRegisterPages=$task_name_register_pages \
         TaskNameScrapingAbstract=$task_name_scraping_abstract \
-        TaskNameScrapingDetail=$task_name_scraping_detail
+        TaskNameScrapingDetail=$task_name_scraping_detail \
+        ArnAcmSslCertficate=$certificated_arn
 
 # S3画像格納バケットに初期フォルダの設置
 stack_name="RestaurantsDeploy${env^}"

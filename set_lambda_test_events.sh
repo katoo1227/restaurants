@@ -98,3 +98,6 @@ set_test_events "LambdaScrapingDetail" "ArnScrapingDetail"
 
 # LambdaNotifyNewRestaurantsのテストイベントの設定
 set_test_events "LambdaNotifyNewRestaurants" "ArnNotifyNewRestaurants"
+
+# LambdaGetRestaurantsのテストイベントの設定
+set_test_events "LambdaGetRestaurants" "ArnGetRestaurants"

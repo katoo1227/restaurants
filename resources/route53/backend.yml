@@ -1,0 +1,12 @@
+BackendApi:
+    Type: AWS::Route53::RecordSet
+    Properties:
+        HostedZoneName: "katoo1227.net."
+        Name: !If
+            - "IsProd"
+            - "restaurants-api.katoo1227.net."
+            - "restaurants-api-dev.katoo1227.net."
+        Type: A
+        AliasTarget:
+            DNSName: !GetAtt "ApiGatewayBackendCustomDomain.RegionalDomainName"
+            HostedZoneId: !GetAtt "ApiGatewayBackendCustomDomain.RegionalHostedZoneId"

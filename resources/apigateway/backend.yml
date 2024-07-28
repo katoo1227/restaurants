@@ -1,0 +1,31 @@
+# API
+ApiGatewayBackend:
+    Type: "AWS::Serverless::Api"
+    Properties:
+        Name: !If
+            - "IsProd"
+            - "RestaurantsProd"
+            - "RestaurantsDev"
+        EndpointConfiguration: "REGIONAL"
+        StageName: "v1"
+
+# カスタムドメイン
+ApiGatewayBackendCustomDomain:
+    Type: "AWS::ApiGateway::DomainName"
+    Properties:
+        DomainName: !If
+            - "IsProd"
+            - "restaurants-api.katoo1227.net"
+            - "restaurants-api-dev.katoo1227.net"
+        EndpointConfiguration:
+            Types:
+                - "REGIONAL"
+        RegionalCertificateArn: !Ref "ArnAcmSslCertficate"
+
+# APIマッピング
+ApiGatewayBackendBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+        DomainName: !Ref ApiGatewayBackendCustomDomain
+        RestApiId: !Ref ApiGatewayBackend
+        Stage: "v1"
