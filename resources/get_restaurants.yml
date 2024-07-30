@@ -1,0 +1,72 @@
+# Lambda
+LambdaGetRestaurants:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/get_restaurants/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsGetRestaurantsProd"
+            - "RestaurantsGetRestaurantsDev"
+        Role: !GetAtt "IamRoleGetRestaurants.Arn"
+        Runtime: "python3.12"
+        Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
+        Environment:
+            Variables:
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
+                NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LATITUDE: "MiddleAreaCodeLatitudeIndex"
+                NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LONGITUDE: "MiddleAreaCodeLongitudeIndex"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+        Events:
+            GetApi:
+                Type: "Api"
+                Properties:
+                    Path: "/get-restaurants"
+                    Method: "post"
+                    RestApiId: !Ref "ApiGatewayBackend"
+
+# IAMロール
+IamRoleGetRestaurants:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsGetRestaurantsProd"
+            - "RestaurantsGetRestaurantsDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
+IamPolicyGetRestaurants:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsGetRestaurantsProd"
+            - "RestaurantsGetRestaurantsDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource:
+                      - !GetAtt "LambdaErrorCommon.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:Query"
+                  Resource:
+                      - !Sub "${DynamodbRestaurants.Arn}/index/MiddleAreaCodeLatitudeIndex"
+                      - !Sub "${DynamodbRestaurants.Arn}/index/MiddleAreaCodeLongitudeIndex"
+        Roles:
+            - !Ref "IamRoleGetRestaurants"

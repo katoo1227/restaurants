@@ -1,0 +1,86 @@
+# Lambda
+LambdaScrapingAbstract:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/scraping_abstract/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsScrapingAbstractProd"
+            - "RestaurantsScrapingAbstractDev"
+        Role: !GetAtt "IamRoleScrapingAbstract.Arn"
+        Runtime: "python3.12"
+        Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerDsArea"
+        Environment:
+            Variables:
+                NAME_TASK_SCRAPING_ABSTRACT: !Ref "TaskNameScrapingAbstract"
+                NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                ARN_LAMBDA_SCRAPING_DETAIL: !GetAtt "LambdaScrapingDetail.Arn"
+                ARN_IAM_ROLE_INVOKE_SCRAPING_DETAIL: !GetAtt "IamRoleInvokeScrapingDetail.Arn"
+                ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
+                NAME_IMAGES_BUCKET: !Ref "S3Images"
+                NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
+                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 120
+
+# IAMロール
+IamRoleScrapingAbstract:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsScrapingAbstractProd"
+            - "RestaurantsScrapingAbstractDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
+IamPolicyScrapingAbstract:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsScrapingAbstractProd"
+            - "RestaurantsScrapingAbstractDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource:
+                      - !GetAtt "LambdaErrorCommon.Arn"
+                      - !GetAtt "LambdaHandlerSchedules.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "s3:ListBucket"
+                  Resource: !Sub "arn:aws:s3:::${S3Images}"
+                - Effect: "Allow"
+                  Action:
+                      - "s3:PutObject"
+                      - "s3:DeleteObject"
+                  Resource: !Sub "arn:aws:s3:::${S3Images}/thumbnails/*"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:BatchGetItem"
+                      - "dynamodb:BatchWriteItem"
+                  Resource: !GetAtt "DynamodbRestaurants.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:DeleteItem"
+                      - "dynamodb:BatchWriteItem"
+                  Resource:
+                      - !GetAtt "DynamodbRestaurantsTasks.Arn"
+        Roles:
+            - !Ref "IamRoleScrapingAbstract"

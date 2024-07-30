@@ -1,0 +1,69 @@
+# Lambda
+LambdaRegisterPages:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/register_pages/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsRegisterPagesProd"
+            - "RestaurantsRegisterPagesDev"
+        Role: !GetAtt "IamRoleRegisterPages.Arn"
+        Runtime: "python3.12"
+        Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerDsArea"
+        Environment:
+            Variables:
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                ARN_LAMBDA_SCRAPING_ABSTRACT: !GetAtt "LambdaScrapingAbstract.Arn"
+                ARN_IAM_ROLE_INVOKE_SCRAPING_ABSTRACT: !GetAtt "IamRoleInvokeScrapingAbstract.Arn"
+                ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
+                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
+                NAME_TASK_REGISTER_PAGES: !Ref "TaskNameRegisterPages"
+                NAME_TASK_SCRAPING_ABSTRACT: !Ref "TaskNameScrapingAbstract"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+# IAMロール
+IamRoleRegisterPages:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsRegisterPagesProd"
+            - "RestaurantsRegisterPagesDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
+IamPolicyRegisterPages:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsRegisterPagesProd"
+            - "RestaurantsRegisterPagesDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource:
+                      - !GetAtt "LambdaErrorCommon.Arn"
+                      - !GetAtt "LambdaHandlerSchedules.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:DeleteItem"
+                      - "dynamodb:BatchWriteItem"
+                  Resource: !GetAtt "DynamodbRestaurantsTasks.Arn"
+        Roles:
+            - !Ref "IamRoleRegisterPages"
