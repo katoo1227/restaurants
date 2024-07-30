@@ -1,0 +1,80 @@
+# Lambda
+LambdaNotifyNewRestaurants:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/notify_new_restaurants/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsNotifyNewRestaurantsProd"
+            - "RestaurantsNotifyNewRestaurantsDev"
+        Role: !GetAtt "IamRoleNotifyNewRestaurants.Arn"
+        Runtime: "python3.12"
+        Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
+        Environment:
+            Variables:
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
+                NAME_DYNAMODB_GSI_RESTAURANTS: "IsNotifiedIndex"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+        Events:
+            EventBridgeScheduleLambdaNotifyNewRestaurants:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 0 ? * SAT *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "NotifyNewRestaurantsProd"
+                        - "NotifyNewRestaurantsDev"
+                    RoleArn: !GetAtt "IamRoleInvokeNotifyNewRestaurants.Arn"
+
+# IAMロール
+IamRoleNotifyNewRestaurants:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsNotifyNewRestaurantsProd"
+            - "RestaurantsNotifyNewRestaurantsDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
+IamPolicyNotifyNewRestaurants:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsNotifyNewRestaurantsProd"
+            - "RestaurantsNotifyNewRestaurantsDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource:
+                      - !GetAtt "LambdaErrorCommon.Arn"
+                      - !GetAtt "LambdaLineNotify.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:BatchWriteItem"
+                  Resource:
+                      - !GetAtt "DynamodbRestaurants.Arn"
+                      - !Sub "${DynamodbRestaurants.Arn}/index/IsNotifiedIndex"
+        Roles:
+            - !Ref "IamRoleNotifyNewRestaurants"

@@ -1,3 +1,20 @@
+# IAMロール
+IamRoleInvokeRegisterSmallAreas:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsInvokeRegisterSmallAreasProd"
+            - "RestaurantsInvokeRegisterSmallAreasDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "scheduler.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
 IamPolicyInvokeRegisterSmallAreas:
     Type: "AWS::IAM::Policy"
     Properties:

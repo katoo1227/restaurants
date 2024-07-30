@@ -1,3 +1,43 @@
+# Lambda
+LambdaHandlerSchedules:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/handler_schedules/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsHandlerSchedulesProd"
+            - "RestaurantsHandlerSchedulesDev"
+        Role: !GetAtt "IamRoleHandlerSchedules.Arn"
+        Runtime: "python3.12"
+        Layers:
+            - !Ref "LambdaLayerDynamodbTypes"
+        Environment:
+            Variables:
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                NAME_SCHEDULE_GROUP: !Ref "EventBridgeScheduleGroup"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+# IAMロール
+IamRoleHandlerSchedules:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsHandlerSchedulesProd"
+            - "RestaurantsHandlerSchedulesDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
 IamPolicyHandlerSchedules:
     Type: "AWS::IAM::Policy"
     Properties:

@@ -1,0 +1,52 @@
+# Lambda
+LambdaLineNotify:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        Handler: app.lambda_handler
+        CodeUri: "./lambda_functions/line_notify/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsLineNotifyProd"
+            - "RestaurantsLineNotifyDev"
+        Role: !GetAtt "IamRoleLineNotify.Arn"
+        Runtime: "python3.12"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+# IAMロール
+IamRoleLineNotify:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsLineNotifyProd"
+            - "RestaurantsLineNotifyDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
+IamPolicyLineNotify:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsLineNotifyProd"
+            - "RestaurantsLineNotifyDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/restaurants/token"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/error_notify/token"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/warning_notify/token"
+        Roles:
+            - !Ref "IamRoleLineNotify"

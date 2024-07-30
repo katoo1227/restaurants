@@ -56,73 +56,37 @@ Resources:
     - $file: resources/lambda_layers/dynamodb_types.yml
 
     # Lambda - LINE通知
-    - $file: resources/line_notify/lambda.yml
-    - $file: resources/line_notify/iam_role.yml
-    - $file: resources/line_notify/iam_policy.yml
+    - $file: resources/line_notify.yml
 
     # Lambda - エラー共通処理
-    - $file: resources/error_common/lambda.yml
-    - $file: resources/error_common/iam_role.yml
-    - $file: resources/error_common/iam_policy.yml
-
-    # Lambda - スケジュール管理
-    - $file: resources/handler_schedules/lambda.yml
-    - $file: resources/handler_schedules/iam_role.yml
-    - $file: resources/handler_schedules/iam_policy.yml
+    - $file: resources/error_common.yml
 
     # EventBridge - スケジュール登録
-    - $file: resources/invoke_handler_schedules/iam_role.yml
-    - $file: resources/invoke_handler_schedules/iam_policy.yml
+    - $file: resources/invoke_handler_schedules.yml
+    - $file: resources/handler_schedules.yml
 
-    # EventBridge - 概要情報スクレイピングタスクの登録（小エリアごと）
-    - $file: resources/invoke_register_small_areas/iam_role.yml
-    - $file: resources/invoke_register_small_areas/iam_policy.yml
+    # Lambda - 小エリア一覧を登録
+    - $file: resources/invoke_register_small_areas.yml
+    - $file: resources/register_small_areas.yml
 
-    # Lambda - 概要情報スクレイピングタスクの登録（小エリアごと）
-    - $file: resources/register_small_areas/lambda.yml
-    - $file: resources/register_small_areas/iam_role.yml
-    - $file: resources/register_small_areas/iam_policy.yml
-
-    # EventBridge - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/invoke_register_pages/iam_role.yml
-    - $file: resources/invoke_register_pages/iam_policy.yml
-
-    # Lambda - 概要情報スクレイピングタスクの登録（ページごと）
-    - $file: resources/register_pages/lambda.yml
-    - $file: resources/register_pages/iam_role.yml
-    - $file: resources/register_pages/iam_policy.yml
-
-    # EventBridge - 概要情報スクレイピング
-    - $file: resources/invoke_scraping_abstract/iam_role.yml
-    - $file: resources/invoke_scraping_abstract/iam_policy.yml
+    # Lambda - 概要一覧ページの登録
+    - $file: resources/invoke_register_pages.yml
+    - $file: resources/register_pages.yml
 
     # Lambda - 概要情報スクレイピング
-    - $file: resources/scraping_abstract/lambda.yml
-    - $file: resources/scraping_abstract/iam_role.yml
-    - $file: resources/scraping_abstract/iam_policy.yml
-
-    # EventBridge - 詳細情報スクレイピング
-    - $file: resources/invoke_scraping_detail/iam_role.yml
-    - $file: resources/invoke_scraping_detail/iam_policy.yml
+    - $file: resources/invoke_scraping_abstract.yml
+    - $file: resources/scraping_abstract.yml
 
     # Lambda - 詳細情報スクレイピング
-    - $file: resources/scraping_detail/lambda.yml
-    - $file: resources/scraping_detail/iam_role.yml
-    - $file: resources/scraping_detail/iam_policy.yml
+    - $file: resources/invoke_scraping_detail.yml
+    - $file: resources/scraping_detail.yml
 
     # Lambda - 新規の飲食店通知
-    - $file: resources/notify_new_restaurants/lambda.yml
-    - $file: resources/notify_new_restaurants/iam_role.yml
-    - $file: resources/notify_new_restaurants/iam_policy.yml
-
-    # EventBridge - 新規の飲食店通知
-    - $file: resources/invoke_notify_new_restaurants/iam_role.yml
-    - $file: resources/invoke_notify_new_restaurants/iam_policy.yml
+    - $file: resources/invoke_notify_new_restaurants.yml
+    - $file: resources/notify_new_restaurants.yml
 
     # Lambda - 飲食店一覧情報を取得
-    - $file: resources/get_restaurants/lambda.yml
-    - $file: resources/get_restaurants/iam_role.yml
-    - $file: resources/get_restaurants/iam_policy.yml
+    - $file: resources/get_restaurants.yml
 
 Outputs:
     # LINE通知LambdaのARN

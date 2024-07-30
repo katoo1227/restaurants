@@ -1,0 +1,59 @@
+# Lambda
+LambdaErrorCommon:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        Handler: app.lambda_handler
+        CodeUri: "./lambda_functions/error_common/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsErrorCommonProd"
+            - "RestaurantsErrorCommonDev"
+        Role: !GetAtt "IamRoleErrorCommon.Arn"
+        Environment:
+            Variables:
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                NAME_CLOUDWATCH_LOG_GROUP: !Ref "CloudWatchLogGroup"
+        Runtime: "python3.12"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+# IAMロール
+IamRoleErrorCommon:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsErrorCommonProd"
+            - "RestaurantsErrorCommonDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
+IamPolicyErrorCommon:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsErrorCommonProd"
+            - "RestaurantsErrorCommonDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource: !GetAtt "LambdaLineNotify.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - logs:DescribeLogStreams
+                      - logs:CreateLogStream
+                      - logs:PutLogEvents
+                  Resource: !GetAtt "CloudWatchLogGroup.Arn"
+        Roles:
+            - !Ref "IamRoleErrorCommon"

@@ -1,3 +1,20 @@
+# IAMロール
+IamRoleInvokeNotifyNewRestaurants:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsInvokeNotifyNewRestaurantsProd"
+            - "RestaurantsInvokeNotifyNewRestaurantsDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "scheduler.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
 IamPolicyInvokeNotifyNewRestaurants:
     Type: "AWS::IAM::Policy"
     Properties:
