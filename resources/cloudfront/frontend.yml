@@ -1,5 +1,5 @@
 # OAC
-CloudfrontFrontendOriginAccessControl:
+CloudfrontOriginAccessControlFrontend:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
         OriginAccessControlConfig:
@@ -11,13 +11,57 @@ CloudfrontFrontendOriginAccessControl:
             SigningBehavior: "always"
             SigningProtocol: "sigv4"
 
+# Basic認証用関数
+CloudfrontFunctionFrontendBasicAuthorization:
+    Type : "AWS::CloudFront::Function"
+    Properties:
+        Name: !If
+            - "IsProd"
+            - "RestaurantsProd"
+            - "RestaurantsDev"
+        AutoPublish: true
+        FunctionCode: !Sub |
+            function handler(event) {
+                const request = event.request;
+                const headers = request.headers;
+
+                const authString = "Basic ${FrontendBasicAuthorization}";
+
+                if (
+                    typeof headers.authorization === "undefined" ||
+                    headers.authorization.value !== authString
+                ) {
+                    return {
+                    statusCode: 401,
+                    statusDescription: "Unauthorized",
+                    headers: {
+                        "www-authenticate": {
+                            value: "Basic"
+                        },
+                    },
+                    };
+                }
+
+                return request;
+            }
+        FunctionConfig:
+            Comment: !If
+                - "IsProd"
+                - "RestaurantsProd"
+                - "RestaurantsDev"
+            Runtime: "cloudfront-js-2.0"
+
+
 # ディストリビューション
 CloudfrontFrontendDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
         DistributionConfig:
             Aliases:
-                - !Ref "FrontendDomainName"
+                - !If
+                    - "IsProd"
+                    - !Sub "restaurants.${Domain}"
+                    - !Sub "restaurants-dev.${Domain}"
             DefaultCacheBehavior:
                 AllowedMethods:
                     - "GET"
@@ -27,6 +71,9 @@ CloudfrontFrontendDistribution:
                 Compress: true
                 TargetOriginId: "S3Origin"
                 ViewerProtocolPolicy: "https-only"
+                FunctionAssociations:
+                    - EventType: "viewer-request"
+                      FunctionARN: !GetAtt "CloudfrontFunctionFrontendBasicAuthorization.FunctionMetadata.FunctionARN"
             DefaultRootObject: "index.html"
             Enabled: true
             HttpVersion: "http2and3"
@@ -35,7 +82,7 @@ CloudfrontFrontendDistribution:
                 - Id: "S3Origin"
                   DomainName: !Sub "${S3Frontend}.s3.${AWS::Region}.amazonaws.com"
                   S3OriginConfig: {}
-                  OriginAccessControlId: !Ref "CloudfrontFrontendOriginAccessControl"
+                  OriginAccessControlId: !Ref "CloudfrontOriginAccessControlFrontend"
             ViewerCertificate:
                 # バージニア北部のSSL証明書
                 AcmCertificateArn: !Ref "ArnAcmSslCertficateUsEast"

@@ -20,10 +20,7 @@ LambdaScrapingDetail:
                 NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
                 NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
                 NAME_DYNAMODB_TABLE_IMAGES: !Ref "DynamodbRestaurantsImages"
-                NAME_PARAMETER_API_KEY_GOOGLE_GEOCODING: !If
-                    - "IsProd"
-                    - "/google/geocoding/prod/key"
-                    - "/google/geocoding/dev/key"
+                PARAMETER_STORE_NAME_GCP_API_KEY: !Ref "ParameterStoreNameGcpApiKey"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
@@ -90,9 +87,6 @@ IamPolicyScrapingDetail:
                 - Effect: "Allow"
                   Action:
                       - "ssm:GetParameter"
-                  Resource: !If
-                      - "IsProd"
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/google/geocoding/prod/key"
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/google/geocoding/dev/key"
+                  Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameGcpApiKey}"
         Roles:
             - !Ref "IamRoleScrapingDetail"

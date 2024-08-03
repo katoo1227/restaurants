@@ -8,6 +8,11 @@ LambdaLineNotify:
             - "IsProd"
             - "RestaurantsLineNotifyProd"
             - "RestaurantsLineNotifyDev"
+        Environment:
+            Variables:
+                PARAMETER_STORE_NAME_LINE_NOTIFY_RESTAURANTS: !Ref "ParameterStoreNameLineNotifyRestaurants"
+                PARAMETER_STORE_NAME_LINE_NOTIFY_ERROR: !Ref "ParameterStoreNameLineNotifyError"
+                PARAMETER_STORE_NAME_LINE_NOTIFY_WARNING: !Ref "ParameterStoreNameLineNotifyWarning"
         Role: !GetAtt "IamRoleLineNotify.Arn"
         Runtime: "python3.12"
         Architectures:
@@ -45,8 +50,8 @@ IamPolicyLineNotify:
                   Action:
                       - "ssm:GetParameter"
                   Resource:
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/restaurants/token"
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/error_notify/token"
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/line_notify/warning_notify/token"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameLineNotifyRestaurants}"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameLineNotifyError}"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameLineNotifyWarning}"
         Roles:
             - !Ref "IamRoleLineNotify"

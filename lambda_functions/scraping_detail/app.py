@@ -413,7 +413,7 @@ def get_detail_info(id: str) -> dict:
     if result["address"] != "":
         # Google Geocoding APIで住所から緯度・経度を取得
         res = boto3.client("ssm").get_parameter(
-            Name=os.environ["NAME_PARAMETER_API_KEY_GOOGLE_GEOCODING"],
+            Name=os.environ["PARAMETER_STORE_NAME_GCP_API_KEY"],
             WithDecryption=True,
         )
         url_params = {"address": result["address"], "key": res["Parameter"]["Value"]}

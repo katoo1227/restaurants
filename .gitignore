@@ -1,2 +1,4 @@
 .aws-sam
+deploy_dev.env
+deploy_prod.env
 template.yml

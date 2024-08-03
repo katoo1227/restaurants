@@ -2,6 +2,7 @@ import json
 import requests
 import textwrap
 import boto3
+import os
 
 # 通知タイプ：通常
 NOTIFY_TYPE_NORMAL = 1
@@ -33,11 +34,11 @@ def lambda_handler(event, context):
 
         # LINE Notifyトークンを取得
         if event["type"] == NOTIFY_TYPE_NORMAL:
-            token_path = "/line_notify/restaurants/token"
+            token_path = os.environ["PARAMETER_STORE_NAME_LINE_NOTIFY_RESTAURANTS"]
         elif event["type"] == NOTIFY_TYPE_ERROR:
-            token_path = "/line_notify/error_notify/token"
+            token_path = os.environ["PARAMETER_STORE_NAME_LINE_NOTIFY_ERROR"]
         else:
-            token_path = "/line_notify/warning_notify/token"
+            token_path = os.environ["PARAMETER_STORE_NAME_LINE_NOTIFY_WARNING"]
         res = boto3.client("ssm").get_parameter(Name=token_path, WithDecryption=True)
         token = res["Parameter"]["Value"]
 

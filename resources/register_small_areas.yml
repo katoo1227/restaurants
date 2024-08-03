@@ -21,6 +21,7 @@ LambdaRegisterSmallAreas:
                 NAME_SCHEDULE_GROUP: !Ref "EventBridgeScheduleGroup"
                 NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
                 NAME_TASK_REGISTER_PAGES: !Ref "TaskNameRegisterPages"
+                PARAMETER_STORE_NAME_HOTPEPPER_API_KEY: !Ref "ParameterStoreNameHotpepperApiKey"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
@@ -72,7 +73,7 @@ IamPolicyRegisterSmallAreas:
                   Action:
                       - "ssm:GetParameter"
                   Resource:
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/restaurants/api_key/hotpepper"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameHotpepperApiKey}"
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"

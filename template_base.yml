@@ -27,8 +27,36 @@ Parameters:
     ArnAcmSslCertficateUsEast:
         Type: "String"
 
-    # フロントエンドのドメイン名
-    FrontendDomainName:
+    # SSMパラメータストア名 - Line Notifyシステム通知
+    ParameterStoreNameLineNotifyRestaurants:
+        Type: "String"
+
+    # SSMパラメータストア名 - Line Notifyエラー通知
+    ParameterStoreNameLineNotifyError:
+        Type: "String"
+
+    # SSMパラメータストア名 - Line Notify警告通知
+    ParameterStoreNameLineNotifyWarning:
+        Type: "String"
+
+    # SSMパラメータストア名 - ホットペッパーAPIキー
+    ParameterStoreNameHotpepperApiKey:
+        Type: "String"
+
+    # SSMパラメータストア名 - GCP APIキー
+    ParameterStoreNameGcpApiKey:
+        Type: "String"
+
+    # ドメイン
+    Domain:
+        Type: "String"
+
+    # Basic認証
+    FrontendBasicAuthorization:
+        Type: "String"
+
+    # S3バケットプレフィックス
+    S3BucketPrefix:
         Type: "String"
 
 Conditions:
