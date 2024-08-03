@@ -4,8 +4,8 @@ S3Frontend:
     Properties:
         BucketName: !If
             - "IsProd"
-            - "katoo1227-restaurants-frontend-prod"
-            - "katoo1227-restaurants-frontend-dev"
+            - !Sub "${S3BucketPrefix}-restaurants-frontend-prod"
+            - !Sub "${S3BucketPrefix}-restaurants-frontend-dev"
         BucketEncryption:
             ServerSideEncryptionConfiguration:
                 - BucketKeyEnabled: true

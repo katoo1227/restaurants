@@ -3,5 +3,5 @@ S3Images:
     Properties:
         BucketName: !If
             - "IsProd"
-            - "katoo1227-restaurants-images-prod"
-            - "katoo1227-restaurants-images-dev"
+            - !Sub "${S3BucketPrefix}-restaurants-images-prod"
+            - !Sub "${S3BucketPrefix}-restaurants-images-dev"

@@ -72,7 +72,7 @@ def get_small_areas(code: str) -> list[DSArea]:
 
     # APIキー
     res = boto3.client("ssm").get_parameter(
-        Name="/restaurants/api_key/hotpepper", WithDecryption=True
+        Name=os.environ["PARAMETER_STORE_NAME_HOTPEPPER_API_KEY"], WithDecryption=True
     )
     api_key = res["Parameter"]["Value"]
 

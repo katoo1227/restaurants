@@ -15,8 +15,8 @@ ApiGatewayBackendCustomDomain:
     Properties:
         DomainName: !If
             - "IsProd"
-            - "restaurants-api.katoo1227.net"
-            - "restaurants-api-dev.katoo1227.net"
+            - !Sub "restaurants-api.${Domain}"
+            - !Sub "restaurants-api-dev.${Domain}"
         EndpointConfiguration:
             Types:
                 - "REGIONAL"
