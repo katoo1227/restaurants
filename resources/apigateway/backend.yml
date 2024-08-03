@@ -20,7 +20,7 @@ ApiGatewayBackendCustomDomain:
         EndpointConfiguration:
             Types:
                 - "REGIONAL"
-        RegionalCertificateArn: !Ref "ArnAcmSslCertficate"
+        RegionalCertificateArn: !Ref "ArnAcmSslCertficateTokyo"
 
 # APIマッピング
 ApiGatewayBackendBasePathMapping:

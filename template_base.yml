@@ -19,10 +19,17 @@ Parameters:
     TaskNameScrapingDetail:
         Type: "String"
 
-    # ARN - ACMのSSL証明書
-    ArnAcmSslCertficate:
+    # ARN - ACMのSSL証明書 - 東京
+    ArnAcmSslCertficateTokyo:
         Type: "String"
 
+    # ARN - ACMのSSL証明書 - バージニア北部
+    ArnAcmSslCertficateUsEast:
+        Type: "String"
+
+    # フロントエンドのドメイン名
+    FrontendDomainName:
+        Type: "String"
 
 Conditions:
     # 本番環境かどうか
@@ -35,8 +42,13 @@ Resources:
     # EventBridgeスケジュールグループ
     - $file: resources/eventbridge/schedule_group.yml
 
+    # Cloudfront - フロントエンド
+    - $file: resources/cloudfront/frontend.yml
+
     # S3 - 画像格納バケット
     - $file: resources/s3/images.yml
+    # S3 - フロントエンド
+    - $file: resources/s3/frontend.yml
 
     # DynamoDB
     - $file: resources/dynamodb/restaurants.yml
@@ -45,6 +57,8 @@ Resources:
 
     # Route53 - バックエンド
     - $file: resources/route53/backend.yml
+    # Route53 - フロントエンド
+    - $file: resources/route53/frontend.yml
 
     # APIGateway - バックエンド
     - $file: resources/apigateway/backend.yml

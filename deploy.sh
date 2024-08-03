@@ -13,14 +13,22 @@
 
 # ACMのSSL証明書ARNを取得
 get_certificated_arn() {
-    # arn=$(aws acm list-certificates --region "us-east-1" | jq -r '.CertificateSummaryList[] | select(.DomainName == "*.katoo1227.net") | .CertificateArn')
-    arn=$(aws acm list-certificates --region "ap-northeast-1" | jq -r '.CertificateSummaryList[] | select(.DomainName == "*.katoo1227.net") | .CertificateArn')
+    arn=$(aws acm list-certificates --region "$1" | jq -r '.CertificateSummaryList[] | select(.DomainName == "*.katoo1227.net") | .CertificateArn')
     if [ -z "$arn" ]; then
         echo ACM SSL Certificate was not found.
         exit 1
     fi
     echo "$arn"
     exit 0
+}
+
+# フロントエンドのドメイン名の取得
+get_frontend_domain() {
+    if [ "$1" == "dev" ]; then
+        echo "restaurants-dev.katoo1227.net"
+    else
+        echo "restaurants.katoo1227.net"
+    fi
 }
 
 # 引数が1つでないと終了
@@ -50,7 +58,9 @@ environment_type=$env
 task_name_register_pages="RegisterPages${env^}"
 task_name_scraping_abstract="ScrapingAbstract${env^}"
 task_name_scraping_detail="ScrapingDetail${env^}"
-certificated_arn=$(get_certificated_arn)
+certificated_arn_tokyo=$(get_certificated_arn "ap-northeast-1")
+certificated_arn_us_east=$(get_certificated_arn "us-east-1")
+frontend_domain=$(get_frontend_domain "$env")
 
 # ビルドとデプロイ
 sam build --template-file ./template.yml
@@ -60,7 +70,9 @@ sam deploy \
         TaskNameRegisterPages=$task_name_register_pages \
         TaskNameScrapingAbstract=$task_name_scraping_abstract \
         TaskNameScrapingDetail=$task_name_scraping_detail \
-        ArnAcmSslCertficate=$certificated_arn
+        ArnAcmSslCertficateTokyo=$certificated_arn_tokyo \
+        ArnAcmSslCertficateUsEast=$certificated_arn_us_east \
+        FrontendDomainName=$frontend_domain
 
 # S3画像格納バケットに初期フォルダの設置
 stack_name="RestaurantsDeploy${env^}"

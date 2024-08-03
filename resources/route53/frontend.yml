@@ -1,0 +1,13 @@
+Route53Frontend:
+    Type: AWS::Route53::RecordSet
+    Properties:
+        HostedZoneName: "katoo1227.net."
+        Name: !If
+            - "IsProd"
+            - "restaurants.katoo1227.net."
+            - "restaurants-dev.katoo1227.net."
+        Type: A
+        AliasTarget:
+            DNSName: !GetAtt "CloudfrontFrontendDistribution.DomainName"
+            # Cloudfrontは「Z2FDTNDATAQYW2」固定
+            HostedZoneId: "Z2FDTNDATAQYW2"

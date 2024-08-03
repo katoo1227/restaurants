@@ -1,0 +1,42 @@
+# OAC
+CloudfrontFrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+        OriginAccessControlConfig:
+            Name: !If
+                - "IsProd"
+                - "RestaurantsProd"
+                - "RestaurantsDev"
+            OriginAccessControlOriginType: "s3"
+            SigningBehavior: "always"
+            SigningProtocol: "sigv4"
+
+# ディストリビューション
+CloudfrontFrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+        DistributionConfig:
+            Aliases:
+                - !Ref "FrontendDomainName"
+            DefaultCacheBehavior:
+                AllowedMethods:
+                    - "GET"
+                    - "HEAD"
+                # CachingOptimized
+                CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6"
+                Compress: true
+                TargetOriginId: "S3Origin"
+                ViewerProtocolPolicy: "https-only"
+            DefaultRootObject: "index.html"
+            Enabled: true
+            HttpVersion: "http2and3"
+            IPV6Enabled: true
+            Origins:
+                - Id: "S3Origin"
+                  DomainName: !Sub "${S3Frontend}.s3.${AWS::Region}.amazonaws.com"
+                  S3OriginConfig: {}
+                  OriginAccessControlId: !Ref "CloudfrontFrontendOriginAccessControl"
+            ViewerCertificate:
+                # バージニア北部のSSL証明書
+                AcmCertificateArn: !Ref "ArnAcmSslCertficateUsEast"
+                SslSupportMethod: "sni-only"
