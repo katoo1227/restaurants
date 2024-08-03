@@ -1,0 +1,31 @@
+# バケット
+S3Frontend:
+    Type: "AWS::S3::Bucket"
+    Properties:
+        BucketName: !If
+            - "IsProd"
+            - "katoo1227-restaurants-frontend-prod"
+            - "katoo1227-restaurants-frontend-dev"
+        BucketEncryption:
+            ServerSideEncryptionConfiguration:
+                - BucketKeyEnabled: true
+    DeletionPolicy: Retain
+
+# バケットポリシー
+S3FrontendBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+        Bucket: !Ref "S3Frontend"
+        PolicyDocument:
+            Version: "2008-10-17"
+            Id: "PolicyForCloudFrontPrivateContent"
+            Statement:
+                - Sid: "AllowCloudFrontServicePrincipal"
+                  Effect: "Allow"
+                  Principal:
+                      Service: "cloudfront.amazonaws.com"
+                  Action: "s3:GetObject"
+                  Resource: !Sub "${S3Frontend.Arn}/*"
+                  Condition:
+                      StringEquals:
+                          AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudfrontFrontendDistribution}"

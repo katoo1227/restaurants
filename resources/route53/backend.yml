@@ -1,4 +1,4 @@
-BackendApi:
+Route53Backend:
     Type: AWS::Route53::RecordSet
     Properties:
         HostedZoneName: "katoo1227.net."
