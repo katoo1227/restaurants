@@ -17,6 +17,7 @@ LambdaGetRestaurants:
                 NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
                 NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LATITUDE: "MiddleAreaCodeLatitudeIndex"
                 NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LONGITUDE: "MiddleAreaCodeLongitudeIndex"
+                FRONTEND_DOMAIN: !Ref "Route53Frontend"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"

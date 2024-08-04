@@ -8,6 +8,10 @@ ApiGatewayBackend:
             - "RestaurantsDev"
         EndpointConfiguration: "REGIONAL"
         StageName: "v1"
+        Cors:
+            AllowOrigin: !Sub "'https://${Route53Frontend}'"
+            AllowMethods: "'POST'"
+            AllowHeaders: "'Content-Type,X-CSRF-TOKEN'"
 
 # カスタムドメイン
 ApiGatewayBackendCustomDomain:

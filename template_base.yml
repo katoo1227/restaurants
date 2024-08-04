@@ -190,3 +190,9 @@ Outputs:
         Value: !Ref "S3Images"
         Export:
             Name: !Sub "${AWS::StackName}-ImagesBucketName"
+
+    # API GatewayバックエンドのID
+    IdApiBackend:
+        Value: !Ref "ApiGatewayBackend"
+        Export:
+            Name: !Sub "${AWS::StackName}-ApiGatewayBackend"
