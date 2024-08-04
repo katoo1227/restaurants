@@ -30,6 +30,9 @@ def lambda_handler(event, context):
 
     response = {
         "statusCode": 200,
+        "headers": {
+            "Access-Control-Allow-Origin": f"https://{os.environ['FRONTEND_DOMAIN']}"
+        },
         "body": "Process Complete",
     }
 

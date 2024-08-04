@@ -84,6 +84,43 @@ build_deploy() {
             S3BucketPrefix="$S3_BUCKET_PREFIX"
 }
 
+# バックエンドAPI Gatewayリソースポリシーを設定
+setResourcePolicyApiGamewatBackend() {
+    env=$1
+    stack_name="RestaurantsDeploy${env^}"
+
+    # API IDを取得
+    api_id=$(sam list stack-outputs \
+        --stack-name $stack_name \
+        --output json \
+        | jq -r --arg key "IdApiBackend" '.[] | select(.OutputKey == $key) | .OutputValue')
+
+    # アカウントIDとリージョン
+    account_id=$(aws sts get-caller-identity --query Account --output text)
+    region=$(aws configure get region)
+
+    # リソースポリシーを更新
+    aws apigateway update-rest-api \
+        --rest-api-id "$api_id" \
+        --patch-operations op=replace,path=/policy,value="'""{
+  \"Version\": \"2012-10-17\",
+  \"Statement\": [
+    {
+      \"Effect\": \"Allow\",
+      \"Principal\": \"*\",
+      \"Action\": \"execute-api:Invoke\",
+      \"Resource\": \"arn:aws:execute-api:$region:$account_id:$api_id/*\",
+      \"Condition\": {
+        \"StringLike\": {
+          \"aws:Referer\": \"https://restaurants-dev.$DOMAIN/*\"
+        }
+      }
+    }
+  ]
+}""'"
+
+}
+
 # S3画像格納バケットに初期ディレクトリを配置
 init_s3_images() {
     env=$1
@@ -105,6 +142,10 @@ deploy() {
 
     # SAM ビルド・デプロイ
     build_deploy $env
+
+    # バックエンドAPI Gatewayリソースポリシーを設定
+    # 自身のARNが必要で循環依存を避けるため
+    setResourcePolicyApiGamewatBackend $env
 
     # S3画像格納バケットに初期フォルダの設置
     init_s3_images $env
