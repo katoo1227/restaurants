@@ -31,12 +31,18 @@ def lambda_handler(event, context):
     response = {
         "statusCode": 200,
         "headers": {
-            "Access-Control-Allow-Origin": f"https://{os.environ['FRONTEND_DOMAIN']}"
+            "Access-Control-Allow-Origin": "null"
         },
-        "body": "Process Complete",
+        "body": "NG",
     }
 
     try:
+        # オリジンの設定
+        origin = set_origin(event)
+        if origin is None:
+            return response
+        response["headers"]["Access-Control-Allow-Origin"] = origin
+
         # パラメータの取得
         evt = get_params(event)
 
@@ -53,6 +59,31 @@ def lambda_handler(event, context):
 
     return response
 
+def set_origin(evt: dict) -> str|None:
+    """
+    オリジンの取得
+
+    Parameters
+    ----------
+    evt: dict
+        イベントパラメータ
+
+    Returns
+    -------
+    str
+        オリジン名。不正ならNone
+    """
+    allowed_origins = os.environ["FRONTEND_DOMAIN"].split(",")
+
+    # Lambda単体のテストやコマンドライン対策
+    if "headers" not in evt:
+        return None
+
+    origin = evt['headers'].get('origin', '')
+    if origin in allowed_origins:
+        return origin
+    else:
+        return None
 
 def get_params(evt: dict) -> EventParams:
     """
@@ -77,6 +108,16 @@ def get_params(evt: dict) -> EventParams:
     # TODO EventParams内でチェックするよう修正
     if not re.match(r"Y\d{3}", body["middle_area_code"]):
         raise Exception(f"middle_area_codeが{str(r"Y\d{3}")}にマッチしない。{body["middle_area_code"]}")
+
+    # 最大と最小が逆であれば正す
+    if body["lat_max"] < body["lat_min"]:
+        lat_tmp = body["lat_max"]
+        body["lat_max"] = body["lat_min"]
+        body["lat_min"] = lat_tmp
+    if body["lng_max"] < body["lng_min"]:
+        lng_tmp = body["lng_max"]
+        body["lng_max"] = body["lng_min"]
+        body["lng_min"] = lng_tmp
 
     try:
         return EventParams(**body)

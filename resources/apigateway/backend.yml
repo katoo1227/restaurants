@@ -9,7 +9,9 @@ ApiGatewayBackend:
         EndpointConfiguration: "REGIONAL"
         StageName: "v1"
         Cors:
-            AllowOrigin: !Sub "'https://${Route53Frontend}'"
+            # 開発環境はローカルからのアクセスも許可する
+            # 複数指定できなそうなので、API Gatewayでは全て通してLambda側でチェック
+            AllowOrigin: "'*'"
             AllowMethods: "'POST'"
             AllowHeaders: "'Content-Type,X-CSRF-TOKEN'"
 
