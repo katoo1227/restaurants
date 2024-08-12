@@ -44,6 +44,7 @@ CREATE TABLE large_area_master (
     name TEXT NOT NULL,
     service_area_code TEXT NOT NULL,
     created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
     FOREIGN KEY (service_area_code) REFERENCES service_area_master(code)
 );
 

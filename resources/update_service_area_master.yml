@@ -1,0 +1,124 @@
+# Lambda
+LambdaUpdateServiceAreaMaster:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/update_service_area_master/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsUpdateServiceAreaMasterProd"
+            - "RestaurantsUpdateServiceAreaMasterDev"
+        Role: !GetAtt "IamRoleUpdateServiceAreaMaster.Arn"
+        Runtime: "python3.12"
+        Layers:
+            - !Ref "LambdaLayerExecHotpepperApi"
+            - !Ref "LambdaLayerHandlerS3Sqlite"
+        Environment:
+            Variables:
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                PARAMETER_STORE_NAME_HOTPEPPER_API_KEY: !Ref "ParameterStoreNameHotpepperApiKey"
+                NAME_BUCKET_DATABASE: !Ref "S3Database"
+                NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
+                NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+        Events:
+            EventBridgeScheduleLambdaUpdateServiceAreaMaster:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 2 ? * SUN *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "UpdateServiceAreaMasterProd"
+                        - "UpdateServiceAreaMasterDev"
+                    RoleArn: !GetAtt "IamRoleInvokeUpdateServiceAreaMaster.Arn"
+
+# IAMロール
+IamRoleUpdateServiceAreaMaster:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsUpdateServiceAreaMasterProd"
+            - "RestaurantsUpdateServiceAreaMasterDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
+IamPolicyUpdateServiceAreaMaster:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsUpdateServiceAreaMasterProd"
+            - "RestaurantsUpdateServiceAreaMasterDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameHotpepperApiKey}"
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource:
+                      - !GetAtt "LambdaErrorCommon.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "s3:GetObject"
+                      - "s3:PutObject"
+                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbFileName}"
+                - Effect: "Allow"
+                  Action:
+                      - "s3:GetObject"
+                      - "s3:PutObject"
+                      - "s3:DeleteObject"
+                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
+        Roles:
+            - !Ref "IamRoleUpdateServiceAreaMaster"
+
+# スケジュール実行IAMロール
+IamRoleInvokeUpdateServiceAreaMaster:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsInvokeUpdateServiceAreaMasterProd"
+            - "RestaurantsInvokeUpdateServiceAreaMasterDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "scheduler.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# スケジュール実行IAMポリシー
+IamPolicyInvokeUpdateServiceAreaMaster:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsInvokeUpdateServiceAreaMasterProd"
+            - "RestaurantsInvokeUpdateServiceAreaMasterDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource: !GetAtt "LambdaUpdateServiceAreaMaster.Arn"
+        Roles:
+            - !Ref "IamRoleInvokeUpdateServiceAreaMaster"
