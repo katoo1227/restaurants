@@ -59,6 +59,16 @@ Parameters:
     S3BucketPrefix:
         Type: "String"
 
+    # sqlite3データベースファイル名
+    Sqlite3DbFileName:
+        Type: "String"
+        Default: "database.sqlite3"
+
+    # sqlite3データベースロックファイル名
+    Sqlite3DbLockFileName:
+        Type: "String"
+        Default: "database.sqlite3.lock"
+
 Conditions:
     # 本番環境かどうか
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
@@ -73,6 +83,8 @@ Resources:
     # Cloudfront - フロントエンド
     - $file: resources/cloudfront/frontend.yml
 
+    # S3 - データベース
+    - $file: resources/s3/database.yml
     # S3 - 画像格納バケット
     - $file: resources/s3/images.yml
     # S3 - フロントエンド
@@ -91,6 +103,12 @@ Resources:
     # APIGateway - バックエンド
     - $file: resources/apigateway/backend.yml
 
+    # Lambdaレイヤー - ホットペッパーAPI
+    - $file: resources/lambda_layers/hotpepper_api_client.yml
+
+    # Lambdaレイヤー - S3sqliteファイルハンドラー
+    - $file: resources/lambda_layers/handler_s3_sqlite.yml
+
     # Lambdaレイヤー - エリア構造体
     - $file: resources/lambda_layers/ds_area.yml
 
@@ -106,6 +124,9 @@ Resources:
     # EventBridge - スケジュール登録
     - $file: resources/invoke_handler_schedules.yml
     - $file: resources/handler_schedules.yml
+
+    # Lambda - ジャンルマスタを更新
+    - $file: resources/update_genre_master.yml
 
     # Lambda - 小エリア一覧を登録
     - $file: resources/invoke_register_small_areas.yml
@@ -185,9 +206,15 @@ Outputs:
         Export:
             Name: !Sub "${AWS::StackName}-GetRestaurants"
 
+    # S3データベース格納バケット名
+    NameDatabaseBucket:
+        Value: !Ref "S3Database"
+        Export:
+            Name: !Sub "${AWS::StackName}-DatabaseBucketName"
+
     # S3画像格納バケット名
     NameImagesBucket:
-        Value: !Ref "S3Images"
+        Value: !GetAtt "S3Images.Arn"
         Export:
             Name: !Sub "${AWS::StackName}-ImagesBucketName"
 
