@@ -1,0 +1,10 @@
+LambdaLayerHandlerS3Sqlite:
+    Type: "AWS::Serverless::LayerVersion"
+    Properties:
+        LayerName: !If
+            - "IsProd"
+            - "RestaurantsDsSqliteLockProd"
+            - "RestaurantsDsSqliteLockDev"
+        ContentUri: "./lambda_layers/handler_s3_sqlite/"
+        CompatibleRuntimes:
+            - "python3.12"

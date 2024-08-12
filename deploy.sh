@@ -38,7 +38,7 @@ create_template() {
     yml_path="$(pwd)/template.yml"
 
     # 「$file: ~~」をテンプレートに展開
-    yq '(.. | select(has("$file"))) |= load(.$file) | .Resources = (.Resources[] as $item ireduce ({}; . * $item))' "$base_path" > "$yml_path"
+    yq '(.. | select(has("$file"))) |= load(.$file) | .Resources = (.Resources[] as $item ireduce ({}; . * $item))' "$base_path" >"$yml_path"
 
     echo "$yml_path"
 }
@@ -62,6 +62,27 @@ get_basic_authorization() {
         --output text
 }
 
+# Lambdaレイヤーの作成
+make_lambda_layers() {
+    # 各レイヤーディレクトリのループ
+    for layer_dir in ./lambda_layers/*/; do
+        dir="${layer_dir%/}"
+        python_dir="$dir/python"
+
+        # pythonディレクトリの作り直し
+        rm -rf "$python_dir"
+        mkdir -p "$python_dir"
+
+        # ソースコードの配置
+        cp $dir/*.py $python_dir
+
+        # requirements.txtがあればpip install
+        if [ -f "${dir}/requirements.txt" ]; then
+            pip install --upgrade -r "${dir}/requirements.txt" -t "$python_dir"
+        fi
+    done
+}
+
 # ビルド・デプロイ
 build_deploy() {
     env=$1
@@ -69,19 +90,19 @@ build_deploy() {
     sam deploy \
         --config-env=$env \
         --parameter-overrides EnvironmentType=$env \
-            TaskNameRegisterPages="RegisterPages${env^}" \
-            TaskNameScrapingAbstract="ScrapingAbstract${env^}" \
-            TaskNameScrapingDetail="ScrapingDetail${env^}" \
-            ArnAcmSslCertficateTokyo=$(get_certificated_arn "ap-northeast-1") \
-            ArnAcmSslCertficateUsEast=$(get_certificated_arn "us-east-1") \
-            ParameterStoreNameLineNotifyRestaurants="${PARAMETER_STORE_NAME_LINE_NOTIFY_RESTAURANTS}" \
-            ParameterStoreNameLineNotifyError="${PARAMETER_STORE_NAME_LINE_NOTIFY_ERROR}" \
-            ParameterStoreNameLineNotifyWarning="${PARAMETER_STORE_NAME_LINE_NOTIFY_WARNING}" \
-            ParameterStoreNameHotpepperApiKey="${PARAMETER_STORE_NAME_HOTPEPPER_API_KEY}" \
-            ParameterStoreNameGcpApiKey="${PARAMETER_STORE_NAME_GCP_API_KEY}" \
-            Domain="${DOMAIN}" \
-            FrontendBasicAuthorization=$(get_basic_authorization) \
-            S3BucketPrefix="$S3_BUCKET_PREFIX"
+        TaskNameRegisterPages="RegisterPages${env^}" \
+        TaskNameScrapingAbstract="ScrapingAbstract${env^}" \
+        TaskNameScrapingDetail="ScrapingDetail${env^}" \
+        ArnAcmSslCertficateTokyo=$(get_certificated_arn "ap-northeast-1") \
+        ArnAcmSslCertficateUsEast=$(get_certificated_arn "us-east-1") \
+        ParameterStoreNameLineNotifyRestaurants="${PARAMETER_STORE_NAME_LINE_NOTIFY_RESTAURANTS}" \
+        ParameterStoreNameLineNotifyError="${PARAMETER_STORE_NAME_LINE_NOTIFY_ERROR}" \
+        ParameterStoreNameLineNotifyWarning="${PARAMETER_STORE_NAME_LINE_NOTIFY_WARNING}" \
+        ParameterStoreNameHotpepperApiKey="${PARAMETER_STORE_NAME_HOTPEPPER_API_KEY}" \
+        ParameterStoreNameGcpApiKey="${PARAMETER_STORE_NAME_GCP_API_KEY}" \
+        Domain="${DOMAIN}" \
+        FrontendBasicAuthorization=$(get_basic_authorization) \
+        S3BucketPrefix="$S3_BUCKET_PREFIX"
 }
 
 # S3画像格納バケットに初期ディレクトリを配置
@@ -102,6 +123,9 @@ deploy() {
 
     # SAMテンプレートの作成
     yml_path=$(create_template)
+
+    # Lambdaレイヤーの作成
+    make_lambda_layers
 
     # SAM ビルド・デプロイ
     build_deploy $env
