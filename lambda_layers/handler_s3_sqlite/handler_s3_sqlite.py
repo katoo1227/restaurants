@@ -14,7 +14,7 @@ class HandlerS3Sqlte:
         self._lock_name = lock_name
         self._db_path = f"/tmp/{self._db_name}"
 
-    def exec_query_with_lock(self, sql: str):
+    def exec_query_with_lock(self, sql: str) -> None|Exception:
         """
         ロックを伴うクエリを発行
         select以外の全ての操作はこのメソッドにより行われる
@@ -23,18 +23,56 @@ class HandlerS3Sqlte:
         ----------
         sql: str
             発行するSQL文
+
+        Returns
+        -------
+        None|Exception
         """
-        # ロックを伴うダウンロード
-        self._download_database_with_lock()
+        try:
+            # ロックを伴うダウンロード
+            self._download_database_with_lock()
 
-        # sqliteに接続
-        conn = sqlite3.connect(self._get_db_path())
-        cursor = conn.cursor()
-        cursor.execute(sql)
-        conn.commit()
+            # sqliteに接続
+            conn = sqlite3.connect(self._get_db_path())
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            conn.commit()
 
-        # アップロード
-        self._upload_database()
+            # アップロード
+            self._upload_database()
+        except Exception as e:
+            # ロックを解除してエラーを返す
+            self._delete_lock()
+            return e
+
+    def exec_query(self, sql: str) -> list|Exception:
+        """
+        ロックを伴うクエリを発行
+        selectの操作はこのメソッドにより行われる
+
+        Parameters
+        ----------
+        sql: str
+            発行するSQL文
+
+        Returns
+        -------
+        list|Exception
+        """
+        try:
+            # ダウンロード
+            self._download_database()
+
+            # sqliteに接続
+            conn = sqlite3.connect(self._get_db_path())
+            cursor = conn.cursor()
+            res = cursor.execute(sql)
+        except Exception as e:
+            # ロックを解除してエラーを返す
+            self._delete_lock()
+            return e
+
+        return res.fetchall()
 
     def _get_db_path(self) -> str:
         """

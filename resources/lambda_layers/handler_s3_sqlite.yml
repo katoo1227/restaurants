@@ -3,8 +3,8 @@ LambdaLayerHandlerS3Sqlite:
     Properties:
         LayerName: !If
             - "IsProd"
-            - "RestaurantsDsSqliteLockProd"
-            - "RestaurantsDsSqliteLockDev"
+            - "RestaurantsHandlerS3SqliteProd"
+            - "RestaurantsHandlerS3SqliteDev"
         ContentUri: "./lambda_layers/handler_s3_sqlite/"
         CompatibleRuntimes:
             - "python3.12"
