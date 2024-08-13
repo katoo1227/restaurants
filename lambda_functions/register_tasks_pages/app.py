@@ -5,15 +5,16 @@ import requests
 import re
 from bs4 import BeautifulSoup
 import dynamodb_types
-import dataclasses
-from ds_area import DSArea
+from pydantic import BaseModel
+from handler_s3_sqlite import HandlerS3Sqlte
 
 
-@dataclasses.dataclass
-class Task:
+class Task(BaseModel):
+    """
+    タスク構造体
+    """
     kind: str
-    params_id: str
-    params: DSArea
+    param: str
 
 
 def lambda_handler(event, context):
@@ -26,7 +27,7 @@ def lambda_handler(event, context):
     try:
 
         # タスクの取得
-        task = get_task_abstract_pages()
+        task = get_task()
 
         # 該当レコードがなければスケジュールを削除
         if task == {}:
@@ -34,17 +35,13 @@ def lambda_handler(event, context):
             return success_response
 
         # ページ数を取得
-        page_num = get_page_num(
-            task.params.service_area_code,
-            task.params.middle_area_code,
-            task.params.small_area_code,
-        )
+        page_num = get_page_num(task.param)
 
         # 概要情報スクレイピングタスクを登録
-        register_tasks_scraping_abstract(task.params, page_num)
+        register_tasks_scraping_abstract(task.param, page_num)
 
-        # ページごとの登録タスクを削除
-        delete_task_abstract_pages(task.kind, task.params_id)
+        # タスクを削除
+        delete_task(task.kind, task.param)
 
         # スケジュールを登録
         register_schedule()
@@ -60,9 +57,9 @@ def lambda_handler(event, context):
     return success_response
 
 
-def get_task_abstract_pages() -> Task:
+def get_task() -> Task:
     """
-    ページごとの登録タスクを取得
+    タスクを取得
 
     Returns
     -------
@@ -81,10 +78,7 @@ def get_task_abstract_pages() -> Task:
     if len(res["Items"]) == 0:
         return {}
 
-    res = dynamodb_types.deserialize_dict(res["Items"][0])
-    return Task(
-        kind=res["kind"], params_id=res["params_id"], params=DSArea(**res["params"])
-    )
+    return Task(**dynamodb_types.deserialize_dict(res["Items"][0]))
 
 
 def delete_schedule() -> None:
@@ -99,18 +93,12 @@ def delete_schedule() -> None:
     )
 
 
-def get_page_num(
-    service_area_code: str, middle_area_code: str, small_area_code: str
-) -> int:
+def get_page_num(small_area_code: str) -> int:
     """
     ページ数を取得
 
     Parameters
     ----------
-    service_area_code: str
-        サービスエリアコード
-    middle_area_code: str
-        中エリアコード
     small_area_code: str
         小エリアコード
 
@@ -119,12 +107,34 @@ def get_page_num(
     int
         ページ数
     """
+
+    # ページURLに必要なデータを取得
+    sql = f"""
+SELECT
+    service.code AS service_area_code,
+    middle.code AS middle_area_code,
+    small.code AS small_area_code
+FROM
+    small_area_master small
+    INNER JOIN middle_area_master middle ON small.middle_area_code = middle.code
+    INNER JOIN large_area_master large ON middle.large_area_code = large.code
+    INNER JOIN service_area_master service ON large.service_area_code = service.code
+WHERE
+    small_area_code = '{small_area_code}';
+"""
+    hss = HandlerS3Sqlte(
+        os.environ["NAME_BUCKET_DATABASE"],
+        os.environ["NAME_FILE_DATABASE"],
+        os.environ["NAME_LOCK_FILE_DATABASE"]
+    )
+    res = hss.exec_query(sql)
+
     # URL
     url_arr = [
-        "https://www.hotpepper.jp/",
-        service_area_code,
-        middle_area_code,
-        small_area_code,
+        "https://www.hotpepper.jp",
+        res[0][0],
+        res[0][1],
+        res[0][2],
         "bgn1",
     ]
     url = "/".join(url_arr) + "/"
@@ -148,25 +158,17 @@ def get_page_num(
     return int(match.group(1))
 
 
-def register_tasks_scraping_abstract(params: DSArea, page_num: int) -> None:
+def register_tasks_scraping_abstract(small_area_code: str, page_num: int) -> None:
     """
     タスクを登録
 
     Parameters
     ----------
-    params: DSArea
-        パラメータ
+    small_area_code: str
+        小エリアコード
     page_num: int
         ページ数
     """
-
-    # paramsカラムの共通の値
-    params_common = {}
-    for key in ["large_service", "service", "large", "middle", "small"]:
-        code_key = f"{key}_area_code"
-        name_key = f"{key}_area_name"
-        params_common[code_key] = getattr(params, code_key)
-        params_common[name_key] = getattr(params, name_key)
 
     # 追加データの作成
     put_requests = [
@@ -175,8 +177,7 @@ def register_tasks_scraping_abstract(params: DSArea, page_num: int) -> None:
                 "Item": dynamodb_types.serialize_dict(
                     {
                         "kind": os.environ["NAME_TASK_SCRAPING_ABSTRACT"],
-                        "params_id": f"{params.small_area_code}_{i}",
-                        "params": params_common | {"page_num": i},
+                        "param": f"{small_area_code}_{i}"
                     }
                 )
             }
@@ -193,21 +194,21 @@ def register_tasks_scraping_abstract(params: DSArea, page_num: int) -> None:
         )
 
 
-def delete_task_abstract_pages(kind: str, params_id: str) -> None:
+def delete_task(kind: str, param: str) -> None:
     """
-    ページごとの登録タスクを削除
+    タスクを削除
 
     Parameters
     ----------
     kind: str
         タスクの種類
 
-    params_id: str
-        パラメータID
+    param: str
+        パラメータ
     """
     boto3.client("dynamodb").delete_item(
         TableName=os.environ["NAME_DYNAMODB_TABLE_TASKS"],
-        Key=dynamodb_types.serialize_dict({"kind": kind, "params_id": params_id}),
+        Key=dynamodb_types.serialize_dict({"kind": kind, "param": param}),
     )
 
 

@@ -1,3 +1,2 @@
-requests
+pydantic
 beautifulsoup4
-pytz

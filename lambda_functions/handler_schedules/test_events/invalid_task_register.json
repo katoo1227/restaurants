@@ -1,6 +1,6 @@
 {
     "task": "aaa",
-    "name": "RegisterPages",
-    "target_arn": "arn:aws:lambda:ap-northeast-1:095796462940:function:RestaurantsRegisterPagesDev",
-    "invoke_role_arn": "arn:aws:iam::095796462940:role/RestaurantsInvokeRegisterPagesDev"
+    "name": "RegisterTasksPages",
+    "target_arn": "arn:aws:lambda:ap-northeast-1:095796462940:function:RestaurantsRegisterTasksPagesDev",
+    "invoke_role_arn": "arn:aws:iam::095796462940:role/RestaurantsInvokeRegisterTasksPagesDev"
 }

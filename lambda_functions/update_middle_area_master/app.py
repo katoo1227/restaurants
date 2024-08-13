@@ -78,11 +78,7 @@ def update_middle_areas(middle_areas: list[MiddleArea]) -> None:
         os.environ["NAME_FILE_DATABASE"],
         os.environ["NAME_LOCK_FILE_DATABASE"],
     )
-    res = hss.exec_query_with_lock(sql)
-
-    # エラーがあればスロー
-    if res is not None:
-        raise res
+    hss.exec_query_with_lock(sql)
 
 
 def get_upsert_sql(middle_areas: list[MiddleArea]) -> str:

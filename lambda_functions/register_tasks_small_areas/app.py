@@ -27,7 +27,7 @@ def lambda_handler(event, context):
         # 小エリアごとのタスクを登録
         register_tasks(small_areas)
 
-        # # EventBridgeスケジュールを登録
+        # EventBridgeスケジュールを登録
         register_schedule()
 
     except Exception as e:
@@ -68,13 +68,9 @@ WHERE
     hss = HandlerS3Sqlte(
         os.environ["NAME_BUCKET_DATABASE"],
         os.environ["NAME_FILE_DATABASE"],
-        os.environ["NAME_LOCK_FILE_DATABASE"],
+        os.environ["NAME_LOCK_FILE_DATABASE"]
     )
     res = hss.exec_query(sql)
-
-    # エラーがあればスロー
-    if isinstance(res, Exception):
-        raise res
 
     return [r[0] for r in res]
 
@@ -101,7 +97,7 @@ def register_tasks(small_areas: list[str]) -> None:
                     "Item": dynamodb_types.serialize_dict(
                         {
                             "kind": os.environ["NAME_TASK_REGISTER_PAGES"],
-                            "params_id": a,
+                            "param": a,
                         }
                     )
                 }
@@ -121,7 +117,7 @@ def register_schedule() -> None:
     payload = {
         "task": "register",
         "name": os.environ["NAME_TASK_REGISTER_PAGES"],
-        "target_arn": os.environ["ARN_LAMBDA_REGISTER_PAGES"],
+        "target_arn": os.environ["ARN_LAMBDA_REGISTER_TASKS_PAGES"],
         "invoke_role_arn": os.environ["ARN_IAM_ROLE_INVOKE_REGISTER_PAGES"],
     }
     boto3.client("lambda").invoke(

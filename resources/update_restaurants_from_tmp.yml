@@ -1,42 +1,49 @@
 # Lambda
-LambdaScrapingDetail:
+LambdaUpdateRestaurantsFromTmp:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/scraping_detail/"
+        CodeUri: "./lambda_functions/update_restaurants_from_tmp/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsScrapingDetailProd"
-            - "RestaurantsScrapingDetailDev"
-        Role: !GetAtt "IamRoleScrapingDetail.Arn"
+            - "RestaurantsUpdateRestaurantsFromTmpProd"
+            - "RestaurantsUpdateRestaurantsFromTmpDev"
+        Role: !GetAtt "IamRoleUpdateRestaurantsFromTmp.Arn"
         Runtime: "python3.12"
         Layers:
             - !Ref "LambdaLayerHandlerS3Sqlite"
-            - !Ref "LambdaLayerDynamodbTypes"
-            - !Ref "LambdaLayerRequests"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
-                NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
-                NAME_BUCKET_IMAGES: !Ref "S3Images"
-                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
-                PARAMETER_STORE_NAME_GCP_API_KEY: !Ref "ParameterStoreNameGcpApiKey"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
-        Timeout: 600
+        Timeout: 30
+
+        Events:
+            EventBridgeScheduleLambdaUpdateRestaurantsFromTmp:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 0 ? * SAT *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "UpdateRestaurantsFromTmpProd"
+                        - "UpdateRestaurantsFromTmpDev"
+                    RoleArn: !GetAtt "IamRoleInvokeUpdateRestaurantsFromTmp.Arn"
 
 # IAMロール
-IamRoleScrapingDetail:
+IamRoleUpdateRestaurantsFromTmp:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsScrapingDetailProd"
-            - "RestaurantsScrapingDetailDev"
+            - "RestaurantsUpdateRestaurantsFromTmpProd"
+            - "RestaurantsUpdateRestaurantsFromTmpDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -46,13 +53,13 @@ IamRoleScrapingDetail:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyScrapingDetail:
+IamPolicyUpdateRestaurantsFromTmp:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsScrapingDetailProd"
-            - "RestaurantsScrapingDetailDev"
+            - "RestaurantsUpdateRestaurantsFromTmpProd"
+            - "RestaurantsUpdateRestaurantsFromTmpDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -61,12 +68,6 @@ IamPolicyScrapingDetail:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
-                      - !GetAtt "LambdaHandlerSchedules.Arn"
-                - Effect: "Allow"
-                  Action:
-                      - "dynamodb:Query"
-                      - "dynamodb:DeleteItem"
-                  Resource: !GetAtt "DynamodbRestaurantsTasks.Arn"
                 - Effect: "Allow"
                   Action:
                       - "s3:GetObject"
@@ -78,30 +79,17 @@ IamPolicyScrapingDetail:
                       - "s3:PutObject"
                       - "s3:DeleteObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
-                - Effect: "Allow"
-                  Action:
-                      - "s3:ListBucket"
-                  Resource: !Sub "arn:aws:s3:::${S3Images}"
-                - Effect: "Allow"
-                  Action:
-                      - "s3:PutObject"
-                      - "s3:DeleteObject"
-                  Resource: !Sub "arn:aws:s3:::${S3Images}/images/*"
-                - Effect: "Allow"
-                  Action:
-                      - "ssm:GetParameter"
-                  Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameGcpApiKey}"
         Roles:
-            - !Ref "IamRoleScrapingDetail"
+            - !Ref "IamRoleUpdateRestaurantsFromTmp"
 
 # IAMロール
-IamRoleInvokeScrapingDetail:
+IamRoleInvokeUpdateRestaurantsFromTmp:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeScrapingDetailProd"
-            - "RestaurantsInvokeScrapingDetailDev"
+            - "RestaurantsInvokeUpdateRestaurantsFromTmpProd"
+            - "RestaurantsInvokeUpdateRestaurantsFromTmpDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -111,19 +99,19 @@ IamRoleInvokeScrapingDetail:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyInvokeScrapingDetail:
+IamPolicyInvokeUpdateRestaurantsFromTmp:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeScrapingDetailProd"
-            - "RestaurantsInvokeScrapingDetailDev"
+            - "RestaurantsInvokeUpdateRestaurantsFromTmpProd"
+            - "RestaurantsInvokeUpdateRestaurantsFromTmpDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaScrapingDetail.Arn"
+                  Resource: !GetAtt "LambdaUpdateRestaurantsFromTmp.Arn"
         Roles:
-            - !Ref "IamRoleInvokeScrapingDetail"
+            - !Ref "IamRoleInvokeUpdateRestaurantsFromTmp"
