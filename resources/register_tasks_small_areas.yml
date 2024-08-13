@@ -15,11 +15,11 @@ LambdaRegisterTasksSmallAreas:
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                ARN_LAMBDA_HANDLER_SCHEDULES: !Ref "LambdaHandlerSchedules"
-                ARN_LAMBDA_REGISTER_PAGES: !GetAtt "LambdaRegisterPages.Arn"
-                ARN_IAM_ROLE_INVOKE_REGISTER_PAGES: !GetAtt "IamRoleInvokeRegisterPages.Arn"
+                ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
+                ARN_LAMBDA_REGISTER_TASKS_PAGES: !GetAtt "LambdaRegisterTasksPages.Arn"
+                ARN_IAM_ROLE_INVOKE_REGISTER_PAGES: !GetAtt "IamRoleInvokeRegisterTasksPages.Arn"
                 NAME_SCHEDULE_GROUP: !Ref "EventBridgeScheduleGroup"
-                NAME_TASK_REGISTER_PAGES: !Ref "TaskNameRegisterPages"
+                NAME_TASK_REGISTER_PAGES: !Ref "TaskNameRegisterTasksPages"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
@@ -80,14 +80,7 @@ IamPolicyRegisterTasksSmallAreas:
                 - Effect: "Allow"
                   Action:
                       - "s3:GetObject"
-                      - "s3:PutObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbFileName}"
-                - Effect: "Allow"
-                  Action:
-                      - "s3:GetObject"
-                      - "s3:PutObject"
-                      - "s3:DeleteObject"
-                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
                 - Effect: "Allow"
                   Action:
                       - "dynamodb:BatchWriteItem"

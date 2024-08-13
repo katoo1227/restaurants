@@ -90,7 +90,7 @@ build_deploy() {
     sam deploy \
         --config-env=$env \
         --parameter-overrides EnvironmentType=$env \
-        TaskNameRegisterPages="RegisterPages${env^}" \
+        TaskNameRegisterTasksPages="RegisterTasksPages${env^}" \
         TaskNameScrapingAbstract="ScrapingAbstract${env^}" \
         TaskNameScrapingDetail="ScrapingDetail${env^}" \
         ArnAcmSslCertficateTokyo=$(get_certificated_arn "ap-northeast-1") \

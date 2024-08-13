@@ -1,25 +1,29 @@
 import boto3
 import os
 import json
-import dynamodb_types
 from datetime import datetime
 import pytz
-from dataclasses import dataclass, asdict
+from pydantic import BaseModel
+from handler_s3_sqlite import HandlerS3Sqlte
 
 
-@dataclass
-class Restaurant:
+class Restaurant(BaseModel):
+    """
+    飲食店構造体
+    """
+
     id: str
     name: str
-    genre: str
-    sub_genre: str
+    genre_code: str
+    sub_genre_code: str | None
     address: str
-    latitude: float
-    longitude: float
-    open_hours: str
-    close_days: str
-    parking: str
-    created_at: str
+
+
+HSS = HandlerS3Sqlte(
+    os.environ["NAME_BUCKET_DATABASE"],
+    os.environ["NAME_FILE_DATABASE"],
+    os.environ["NAME_LOCK_FILE_DATABASE"],
+)
 
 
 def lambda_handler(event, context):
@@ -31,18 +35,19 @@ def lambda_handler(event, context):
 
     try:
         # 未通知の飲食店を取得
-        yet_notified_restaurants = get_yet_notified_restaurants()
+        yet_notifieds = get_yet_notifieds()
+        print(yet_notifieds)
 
         # 未通知がなければ終了
-        if len(yet_notified_restaurants) == 0:
+        if len(yet_notifieds) == 0:
             notify_line_no_exists()
             return success_response
 
         # 新規飲食店の通知
-        notify_line_restaurants(yet_notified_restaurants)
+        notify_line_restaurants(yet_notifieds)
 
         # is_notifiedの更新
-        update_is_notified(yet_notified_restaurants)
+        update_is_notified(yet_notifieds)
 
     except Exception as e:
         payload = {"function_name": context.function_name, "msg": str(e)}
@@ -55,7 +60,7 @@ def lambda_handler(event, context):
     return success_response
 
 
-def get_yet_notified_restaurants() -> list[Restaurant]:
+def get_yet_notifieds() -> list[Restaurant]:
     """
     未通知の飲食店を取得
 
@@ -63,53 +68,26 @@ def get_yet_notified_restaurants() -> list[Restaurant]:
     -------
     list[Restaurant]
     """
-    # 取得するカラム一覧
-    columns = [
-        "id",
-        "#n", # nameは予約語なのでプレースホルダーを使用
-        "genre",
-        "sub_genre",
-        "address",
-        "latitude",
-        "longitude",
-        "open_hours",
-        "close_days",
-        "parking",
-        "created_at",
-    ]
-
-    res = boto3.client("dynamodb").query(
-        TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"],
-        IndexName=os.environ["NAME_DYNAMODB_GSI_RESTAURANTS"],
-        KeyConditionExpression="is_notified = :is_notified",
-        ExpressionAttributeValues={
-            ":is_notified": dynamodb_types.serialize(0),
-        },
-        ProjectionExpression=",".join(columns),
-        FilterExpression=" AND ".join([f"attribute_exists({c})" for c in columns]),
-        ExpressionAttributeNames={"#n": "name"},
-    )
-
-    # 通常のdictの形に変換して返す
-    results = []
-    for item in res["Items"]:
-        i = dynamodb_types.deserialize_dict(item)
-        results.append(
-            Restaurant(
-                id=i["id"],
-                name=i["name"],
-                genre=i["genre"],
-                sub_genre=i["sub_genre"],
-                address=i["address"],
-                latitude=i["latitude"],
-                longitude=i["longitude"],
-                open_hours=i["open_hours"],
-                close_days=i["close_days"],
-                parking=i["parking"],
-                created_at=i["created_at"],
-            )
+    # 未通知の飲食店を取得
+    sql = """
+SELECT
+    id,
+    name,
+    genre_code,
+    sub_genre_code,
+    address
+FROM
+    restaurants
+WHERE
+    is_notified = 0;
+"""
+    restaurants = HSS.exec_query(sql)
+    return [
+        Restaurant(
+            id=r[0], name=r[1], genre_code=r[2], sub_genre_code=r[3], address=r[4]
         )
-    return results
+        for r in restaurants
+    ]
 
 
 def notify_line_no_exists() -> None:
@@ -133,16 +111,28 @@ def notify_line_restaurants(restaurants: list[Restaurant]) -> None:
     ----------
     restaurants: list[Restaurant]
     """
+    # ジャンルマスタを全て取得
+    sql = f"""
+SELECT
+    code,
+    name
+FROM
+    genre_master;
+"""
+    res = HSS.exec_query(sql)
+    genres = {r[0]: r[1] for r in res if r != ""}
+
+    # 通知メッセージ
     msg = "新しい飲食店が登録されました。"
-    for s in restaurants:
-        genre_str = s.genre
-        if s.sub_genre != "":
-            genre_str += "、" + s.sub_genre
+    for r in restaurants:
+        genre_str = genres[r.genre_code]
+        if r.sub_genre_code is not None:
+            genre_str += "、" + genres[r.sub_genre_code]
         msg += f"""
-■店名：{s.name}
+■店名：{r.name}
 ・ジャンル：{genre_str}
-・住所：{s.address}
-https://www.hotpepper.jp/str{s.id}/
+・住所：{r.address}
+https://www.hotpepper.jp/str{r.id}/
 """
     payload = {"type": 1, "msg": msg.strip()}
     boto3.client("lambda").invoke(
@@ -164,19 +154,13 @@ def update_is_notified(restaurants: list[Restaurant]) -> None:
     tz = pytz.timezone("Asia/Tokyo")
     now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
-    # 更新データの作成
-    update_datas = []
-    for r in restaurants:
-        item = asdict(r) | {"is_notified": 1, "updated_at": now}
-        update_datas.append(
-            {"PutRequest": {"Item": dynamodb_types.serialize_dict(item)}}
-        )
-
-    # DynamoDBへの更新
-    # batch_write_itemは一度に25件までしか更新できないため
-    if len(update_datas) > 0:
-        for i in range(0, len(update_datas), 25):
-            batch = update_datas[i : i + 25]
-            boto3.client("dynamodb").batch_write_item(
-                RequestItems={os.environ["NAME_DYNAMODB_RESTAURANTS"]: batch}
-            )
+    sql = f"""
+UPDATE
+    restaurants
+SET
+    is_notified = 1,
+    updated_at = '{now}'
+WHERE
+    id IN ({",".join([f"'{r.id}'" for r in restaurants])});
+"""
+    HSS.exec_query_with_lock(sql)

@@ -8,12 +8,12 @@ DynamodbRestaurantsTasks:
         AttributeDefinitions:
             - AttributeName: "kind"
               AttributeType: "S"
-            - AttributeName: "params_id"
+            - AttributeName: "param"
               AttributeType: "S"
         KeySchema:
             - AttributeName: "kind"
               KeyType: "HASH"
-            - AttributeName: "params_id"
+            - AttributeName: "param"
               KeyType: "RANGE"
         ProvisionedThroughput:
             ReadCapacityUnits: 5

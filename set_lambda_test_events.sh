@@ -87,8 +87,8 @@ set_test_events "LambdaHandlerSchedules" "ArnLambdaHandlerSchedules"
 # LambdaRegisterTasksSmallAreasのテストイベントの設定
 set_test_events "LambdaRegisterTasksSmallAreas" "ArnLambdaRegisterTasksSmallAreas"
 
-# LambdaRegisterPagesのテストイベントの設定
-set_test_events "LambdaRegisterPages" "ArnLambdaRegisterPages"
+# LambdaRegisterTasksPagesのテストイベントの設定
+set_test_events "LambdaRegisterTasksPages" "ArnLambdaRegisterTasksPages"
 
 # LambdaScrapingAbstractのテストイベントの設定
 set_test_events "LambdaScrapingAbstract" "ArnScrapingAbstract"
@@ -96,11 +96,14 @@ set_test_events "LambdaScrapingAbstract" "ArnScrapingAbstract"
 # LambdaScrapingDetailのテストイベントの設定
 set_test_events "LambdaScrapingDetail" "ArnScrapingDetail"
 
+# LambdaUpdateRestaurantsFromTmpのテストイベントの設定
+set_test_events "LambdaUpdateRestaurantsFromTmp" "ArnLambdaUpdateRestaurantsFromTmp"
+
 # LambdaNotifyNewRestaurantsのテストイベントの設定
 set_test_events "LambdaNotifyNewRestaurants" "ArnNotifyNewRestaurants"
 
-# LambdaGetRestaurantsのテストイベントの設定
-set_test_events "LambdaGetRestaurants" "ArnGetRestaurants"
+# # LambdaGetRestaurantsのテストイベントの設定
+# set_test_events "LambdaGetRestaurants" "ArnGetRestaurants"
 
 # LambdaUpdateGenreMasterのテストイベントの設定
 set_test_events "LambdaUpdateGenreMaster" "ArnLambdaUpdateGenreMaster"

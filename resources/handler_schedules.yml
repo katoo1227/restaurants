@@ -60,14 +60,14 @@ IamPolicyHandlerSchedules:
                       - "scheduler:CreateSchedule"
                       - "scheduler:DeleteSchedule"
                   Resource:
-                      - !Sub "arn:aws:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${EventBridgeScheduleGroup}/${TaskNameRegisterPages}"
+                      - !Sub "arn:aws:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${EventBridgeScheduleGroup}/${TaskNameRegisterTasksPages}"
                       - !Sub "arn:aws:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${EventBridgeScheduleGroup}/${TaskNameScrapingAbstract}"
                       - !Sub "arn:aws:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/${EventBridgeScheduleGroup}/${TaskNameScrapingDetail}"
                 - Effect: "Allow"
                   Action:
                       - "iam:PassRole"
                   Resource:
-                      - !GetAtt "IamRoleInvokeRegisterPages.Arn"
+                      - !GetAtt "IamRoleInvokeRegisterTasksPages.Arn"
                       - !GetAtt "IamRoleInvokeScrapingAbstract.Arn"
                       - !GetAtt "IamRoleInvokeScrapingDetail.Arn"
         Roles:
