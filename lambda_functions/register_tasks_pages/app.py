@@ -120,14 +120,15 @@ FROM
     INNER JOIN large_area_master large ON middle.large_area_code = large.code
     INNER JOIN service_area_master service ON large.service_area_code = service.code
 WHERE
-    small_area_code = '{small_area_code}';
+    small_area_code = ?;
 """
+    params = [small_area_code]
     hss = HandlerS3Sqlte(
         os.environ["NAME_BUCKET_DATABASE"],
         os.environ["NAME_FILE_DATABASE"],
         os.environ["NAME_LOCK_FILE_DATABASE"]
     )
-    res = hss.exec_query(sql)
+    res = hss.exec_query(sql, params)
 
     # URL
     url_arr = [

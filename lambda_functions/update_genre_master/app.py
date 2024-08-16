@@ -70,18 +70,18 @@ def update_genres(genres: list[Genre]) -> None:
     genre: list[Genre]
         ジャンル一覧
     """
-    sql = get_upsert_sql(genres)
+    query = get_upsert_query(genres)
     hss = HandlerS3Sqlte(
         os.environ["NAME_BUCKET_DATABASE"],
         os.environ["NAME_FILE_DATABASE"],
         os.environ["NAME_LOCK_FILE_DATABASE"],
     )
-    hss.exec_query_with_lock(sql)
+    hss.exec_query_with_lock(query[0], query[1])
 
 
-def get_upsert_sql(genres: list[Genre]) -> str:
+def get_upsert_query(genres: list[Genre]) -> tuple:
     """
-    upsertを行うSQLを作成
+    upsertを行うSQLとパラメータを取得
 
     Parameters
     ----------
@@ -90,27 +90,30 @@ def get_upsert_sql(genres: list[Genre]) -> str:
 
     Returns
     -------
-    str
+    tuple
+        sql: SQL文
+        params: placeholderの値
     """
 
     # 今の日時
     tz = pytz.timezone("Asia/Tokyo")
     now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
-    # 引数をVALUES部分に置換
-    values_arr = []
-    for g in genres:
-        values_arr.append(
-            "(" + ",".join([f"'{g.code}'", f"'{g.name}'", f"'{now}'", f"'{now}'"]) + ")"
-        )
-    values = ",".join(values_arr)
-
+    # SQL
+    values_row_str = f"({', '.join(['?'] * 4)})"
     sql = f"""
-INSERT INTO genre_master(code, name, created_at, updated_at)
+INSERT INTO
+    genre_master(code, name, created_at, updated_at)
 VALUES
-{values}
+    {', '.join([values_row_str] * len(genres))}
 ON CONFLICT(code) DO UPDATE SET
     name = excluded.name,
     updated_at = excluded.updated_at;
 """
-    return sql
+
+    # パラメータ
+    params = []
+    for g in genres:
+        params.extend([g.code, g.name, now, now])
+
+    return sql, params

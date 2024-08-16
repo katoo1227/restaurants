@@ -142,14 +142,15 @@ FROM
     INNER JOIN large_area_master large ON middle.large_area_code = large.code
     INNER JOIN service_area_master service ON large.service_area_code = service.code
 WHERE
-    small_area_code = '{small_area_code}';
+    small_area_code = ?;
 """
+    params = [small_area_code]
     hss = HandlerS3Sqlte(
         os.environ["NAME_BUCKET_DATABASE"],
         os.environ["NAME_FILE_DATABASE"],
         os.environ["NAME_LOCK_FILE_DATABASE"],
     )
-    res = hss.exec_query(sql)
+    res = hss.exec_query(sql, params)
 
     # URL
     url_arr = [
@@ -258,29 +259,32 @@ def register_restaurants(small_area_code: str, abstracts: list[Abstract]) -> Non
     abstracts: list[Abstract]
         概要情報リスト
     """
-    # 引数をVALUES部分に置換
-    values_arr = []
-    for a in abstracts:
-        is_thumbnail = 0
-        if a.thumbnail_url is not None:
-            is_thumbnail = 1
-        values_arr.append(f"('{a.id}', '{small_area_code}', '{is_thumbnail}')")
-    values = ",".join(values_arr)
 
+    # SQL
+    values_row_str = f"({', '.join(['?'] * 3)})"
     sql = f"""
-INSERT INTO restaurants_tmp(id, small_area_code, is_thumbnail)
+INSERT INTO
+    restaurants_tmp(id, small_area_code, is_thumbnail)
 VALUES
-{values}
+    {', '.join([values_row_str] * len(abstracts))}
 ON CONFLICT(id) DO UPDATE SET
     small_area_code = excluded.small_area_code,
     is_thumbnail = excluded.is_thumbnail;
 """
+
+    # パラメータ
+    params = []
+    for a in abstracts:
+        is_thumbnail = 0
+        if a.thumbnail_url is not None:
+            is_thumbnail = 1
+        params.extend([a.id, small_area_code, is_thumbnail])
     hss = HandlerS3Sqlte(
         os.environ["NAME_BUCKET_DATABASE"],
         os.environ["NAME_FILE_DATABASE"],
         os.environ["NAME_LOCK_FILE_DATABASE"],
     )
-    hss.exec_query_with_lock(sql)
+    hss.exec_query_with_lock(sql, params)
 
 
 def register_tasks_scraping_detail(abstracts: list[Abstract]) -> None:

@@ -80,14 +80,14 @@ SELECT
 FROM
     restaurants_tmp
 WHERE
-    name <> ''
-    AND small_area_code <> ''
-    AND genre_code <> ''
-    AND address <> ''
-    AND latitude <> 0
-    AND longitude <> 0;
+    name <> ?
+    AND small_area_code <> ?
+    AND genre_code <> ?
+    AND address <> ?
+    AND latitude <> ?
+    AND longitude <> ?;
 """
-    res = HSS.exec_query(sql)
+    res = HSS.exec_query(sql, ['', '', '', '', 0, 0])
     return [
         RestaurantTmp(
             id=r[0],
@@ -127,6 +127,8 @@ def update_restaurants(tmps: list[RestaurantTmp]) -> None:
             f"('{t.id}', '{t.name}', '{t.small_area_code}', '{t.genre_code}', {sub_genre}, '{t.address}', {t.latitude}, {t.longitude}, '{t.open_hours}', '{t.close_days}', '{t.parking}', {t.is_thumbnail}, '{now}', '{now}')"
         )
 
+    # SQL
+    values_row_str = f"({', '.join(['?'] * 14)})"
     sql = f"""
 INSERT INTO
     restaurants (
@@ -146,7 +148,7 @@ INSERT INTO
         updated_at
     )
 VALUES
-    {",".join(values_arr)}
+    {', '.join([values_row_str] * len(tmps))}
 ON CONFLICT(id) DO UPDATE SET
     name = excluded.name,
     small_area_code = excluded.small_area_code,
@@ -161,4 +163,13 @@ ON CONFLICT(id) DO UPDATE SET
     is_thumbnail = excluded.is_thumbnail,
     updated_at = excluded.updated_at;
 """
-    HSS.exec_query_with_lock(sql)
+
+    # パラメータ
+    params = []
+    for t in tmps:
+        sub_genre = None
+        if t.sub_genre_code is not None:
+            sub_genre = t.sub_genre_code
+        params.extend([t.id, t.name, t.small_area_code, t.genre_code, sub_genre, t.address, t.latitude, t.longitude, t.open_hours, t.close_days, t.parking, t.is_thumbnail, now, now])
+
+    HSS.exec_query_with_lock(sql, params)

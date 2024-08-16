@@ -1,6 +1,16 @@
+import json
 import boto3
 import time
 import sqlite3
+from pydantic import BaseModel
+
+class Query(BaseModel):
+    """
+    クエリ
+    """
+
+    sql: str
+    params: list
 
 
 class HandlerS3Sqlte:
@@ -14,7 +24,7 @@ class HandlerS3Sqlte:
         self._lock_name = lock_name
         self._db_path = f"/tmp/{self._db_name}"
 
-    def exec_query_with_lock(self, sql: str) -> None:
+    def exec_query_with_lock(self, sql: str, params: list = []) -> None:
         """
         ロックを伴うクエリを発行
         select以外の全ての操作はこのメソッドにより行われる
@@ -23,8 +33,13 @@ class HandlerS3Sqlte:
         ----------
         sql: str
             発行するSQL文
+        params: list
+            placeholderの値
         """
         try:
+            # 型チェック
+            query = Query(sql=sql, params=params)
+
             # ロックを伴うダウンロード
             self._download_database_with_lock()
 
@@ -33,7 +48,7 @@ class HandlerS3Sqlte:
             cursor = conn.cursor()
             # 外部キー制約の有効化
             cursor.execute("PRAGMA foreign_keys = 1")
-            cursor.execute(sql)
+            cursor.execute(query.sql, query.params)
             conn.commit()
 
             # アップロード
@@ -41,9 +56,9 @@ class HandlerS3Sqlte:
         except Exception as e:
             # ロックを解除して呼び出し元でエラーをスロー
             self._delete_lock()
-            raise Exception(f"クエリ発行エラー。{e}\n{sql}")
+            raise Exception(f"クエリ発行エラー。{e}\n{sql}\n{json.dumps(params)}")
 
-    def exec_query(self, sql: str) -> list:
+    def exec_query(self, sql: str, params: list = []) -> list:
         """
         ロックを伴うクエリを発行
         selectの操作はこのメソッドにより行われる
@@ -52,22 +67,27 @@ class HandlerS3Sqlte:
         ----------
         sql: str
             発行するSQL文
+        params: list
+            placeholderの値
 
         Returns
         -------
         list
         """
         try:
+            # 型チェック
+            query = Query(sql=sql, params=params)
+
             # ダウンロード
             self._download_database()
 
             # sqliteに接続
             conn = sqlite3.connect(self._get_db_path())
             cursor = conn.cursor()
-            res = cursor.execute(sql)
+            res = cursor.execute(query.sql, query.params)
         except Exception as e:
             # 呼び出し元でエラーをスロー
-            raise Exception(f"クエリ発行エラー。{e}\n{sql}")
+            raise Exception(f"クエリ発行エラー。{e}\n{sql}\n{json.dumps(params)}")
 
         return res.fetchall()
 
@@ -75,7 +95,7 @@ class HandlerS3Sqlte:
         """
         DBダウンロードパスを取得
 
-        Retruns
+        Returns
         -------
         str
         """
