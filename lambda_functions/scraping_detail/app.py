@@ -160,9 +160,9 @@ def put_images(id: str) -> None:
 DELETE FROM
     images
 WHERE
-    id = '{id}';
+    id = ?;
 """
-        HSS.exec_query_with_lock(sql)
+        HSS.exec_query_with_lock(sql, [id])
         return
 
     # HTML解析
@@ -228,9 +228,9 @@ SELECT
 FROM
     images
 WHERE
-    id = '{id}';
+    id = ?;
 """
-    res = HSS.exec_query(sql)
+    res = HSS.exec_query(sql, [id])
 
     items_len = res[0][0]
     img_infos_len = len(img_infos)
@@ -248,10 +248,11 @@ WHERE
 DELETE FROM
     images
 WHERE
-    id = '{id}'
-    AND order_num >= {items_len - img_infos_len};
+    id = ?
+    AND order_num >= ?;
 """
-        HSS.exec_query_with_lock(sql)
+        params = [id, items_len - img_infos_len]
+        HSS.exec_query_with_lock(sql, params)
 
         # S3画像の削除
         for i in range(items_len - img_infos_len):
@@ -281,12 +282,12 @@ WHERE
             time.sleep(1)
 
     # imageテーブルを更新
-    sql = get_images_upsert_sql(id, img_infos)
-    HSS.exec_query_with_lock(sql)
+    query = get_images_upsert_sql(id, img_infos)
+    HSS.exec_query_with_lock(query[0], query[1])
 
     return img_infos_len
 
-def get_images_upsert_sql(id: str, images: list[Image]) -> str:
+def get_images_upsert_sql(id: str, images: list[Image]) -> tuple:
     """
     imagesテーブルのupsertのSQL文を取得
 
@@ -299,24 +300,32 @@ def get_images_upsert_sql(id: str, images: list[Image]) -> str:
 
     Returns
     -------
-    str
+    tuple
+        sql: SQL文
+        params: placeholderの値
     """
     # 今の日時
     tz = pytz.timezone("Asia/Tokyo")
     now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-    values_arr = [
-        f"('{id}', {i+1}, '{image.alt}', '{now}', '{now}')"
-        for i, image in enumerate(images)
-    ]
-    return f"""
+
+    # SQL
+    values_row_str = f"({', '.join(['?'] * 5)})"
+    sql =  f"""
 INSERT INTO
     images(id, order_num, name, created_at, updated_at)
 VALUES
-    {",".join(values_arr)}
+    {', '.join([values_row_str] * len(images))}
 ON CONFLICT(id, order_num) DO UPDATE SET
     name = excluded.name,
     updated_at = excluded.updated_at;
 """
+
+    # パラメータ
+    params = []
+    for i, image in enumerate(images):
+        params.extend([id, i + 1, image.alt, now, now])
+
+    return sql, params
 
 
 def get_detail_info(id: str) -> Detail:
@@ -483,9 +492,11 @@ def update_restaurant(id: str, info: Detail) -> None:
     """
 
     # ジャンルをコードに変換
-    genres = f"'{info.genre}'"
+    genres = [info.genre]
     if info.sub_genre is not None:
-        genres += f"'{info.sub_genre}'"
+        genres.extend(info.sub_genre)
+
+    # SQL
     sql = f"""
 SELECT
     code,
@@ -493,36 +504,48 @@ SELECT
 FROM
     genre_master
 WHERE
-    name IN ({genres});
+    name IN ({', '.join(['?'] * len(genres))});
 """
-    res = HSS.exec_query(sql)
+    res = HSS.exec_query(sql, genres)
     genre_name_codes = {
         r[1]: r[0]
         for r in res if r != ""
     }
     genre_code = genre_name_codes[info.genre]
-    sub_genre_code = "NULL"
+    sub_genre_code = None
     if info.sub_genre is not None:
-        sub_genre_code = f"'{genre_name_codes[info.sub_genre]}'"
+        sub_genre_code = genre_name_codes[info.sub_genre]
 
     # restuarants_tmpテーブルの更新
     sql = f"""
 UPDATE
     restaurants_tmp
 SET
-    name = '{info.name}',
-    genre_code = '{genre_code}',
-    sub_genre_code = {sub_genre_code},
-    address = '{info.address}',
-    latitude = {info.latitude},
-    longitude = {info.longitude},
-    open_hours = '{info.open_hours}',
-    close_days = '{info.close_days}',
-    parking = '{info.parking}'
+    name = ?,
+    genre_code = ?,
+    sub_genre_code = ?,
+    address = ?,
+    latitude = ?,
+    longitude = ?,
+    open_hours = ?,
+    close_days = ?,
+    parking = ?
 WHERE
-    id = '{id}';
+    id = ?;
 """
-    HSS.exec_query_with_lock(sql)
+    params = [
+        info.name,
+        genre_code,
+        sub_genre_code,
+        info.address,
+        info.latitude,
+        info.longitude,
+        info.open_hours,
+        info.close_days,
+        info.parking,
+        id
+    ]
+    HSS.exec_query_with_lock(sql, params)
 
 
 def delete_task(kind: str, id: str) -> None:

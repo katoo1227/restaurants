@@ -70,18 +70,18 @@ def update_large_service_areas(large_service_areas: list[LargeServiceArea]) -> N
     large_service_areas: list[LargeServiceArea]
         大サービスエリア一覧
     """
-    sql = get_upsert_sql(large_service_areas)
+    query = get_upsert_query(large_service_areas)
     hss = HandlerS3Sqlte(
         os.environ["NAME_BUCKET_DATABASE"],
         os.environ["NAME_FILE_DATABASE"],
         os.environ["NAME_LOCK_FILE_DATABASE"],
     )
-    hss.exec_query_with_lock(sql)
+    hss.exec_query_with_lock(query[0], query[1])
 
 
-def get_upsert_sql(large_service_areas: list[LargeServiceArea]) -> str:
+def get_upsert_query(large_service_areas: list[LargeServiceArea]) -> tuple:
     """
-    upsertを行うSQLを作成
+    upsertを行うSQLとパラメータを取得
 
     Parameters
     ----------
@@ -90,27 +90,30 @@ def get_upsert_sql(large_service_areas: list[LargeServiceArea]) -> str:
 
     Returns
     -------
-    str
+    tuple
+        sql: SQL文
+        params: placeholderの値
     """
 
     # 今の日時
     tz = pytz.timezone("Asia/Tokyo")
     now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
-    # 引数をVALUES部分に置換
-    values_arr = []
-    for a in large_service_areas:
-        values_arr.append(
-            "(" + ",".join([f"'{a.code}'", f"'{a.name}'", f"'{now}'", f"'{now}'"]) + ")"
-        )
-    values = ",".join(values_arr)
-
+    # SQL
+    values_row_str = f"({', '.join(['?'] * 4)})"
     sql = f"""
-INSERT INTO large_service_area_master(code, name, created_at, updated_at)
+INSERT INTO
+    large_service_area_master(code, name, created_at, updated_at)
 VALUES
-{values}
+    {', '.join([values_row_str] * len(large_service_areas))}
 ON CONFLICT(code) DO UPDATE SET
     name = excluded.name,
     updated_at = excluded.updated_at;
 """
-    return sql
+
+    # パラメータ
+    params = []
+    for a in large_service_areas:
+        params.extend([a.code, a.name, now, now])
+
+    return sql, params

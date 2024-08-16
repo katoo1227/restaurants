@@ -36,7 +36,6 @@ def lambda_handler(event, context):
     try:
         # 未通知の飲食店を取得
         yet_notifieds = get_yet_notifieds()
-        print(yet_notifieds)
 
         # 未通知がなければ終了
         if len(yet_notifieds) == 0:
@@ -79,9 +78,9 @@ SELECT
 FROM
     restaurants
 WHERE
-    is_notified = 0;
+    is_notified = ?;
 """
-    restaurants = HSS.exec_query(sql)
+    restaurants = HSS.exec_query(sql, [0])
     return [
         Restaurant(
             id=r[0], name=r[1], genre_code=r[2], sub_genre_code=r[3], address=r[4]
@@ -154,13 +153,18 @@ def update_is_notified(restaurants: list[Restaurant]) -> None:
     tz = pytz.timezone("Asia/Tokyo")
     now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
+    # SQL
     sql = f"""
 UPDATE
     restaurants
 SET
-    is_notified = 1,
-    updated_at = '{now}'
+    is_notified = ?,
+    updated_at = ?
 WHERE
-    id IN ({",".join([f"'{r.id}'" for r in restaurants])});
+    id IN ({', '.join(['?'] * len(restaurants))});
 """
-    HSS.exec_query_with_lock(sql)
+    # パラメータ
+    params = [1, now]
+    params.extend([r.id for r in restaurants])
+
+    HSS.exec_query_with_lock(sql, params)

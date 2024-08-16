@@ -63,14 +63,15 @@ SELECT
 FROM
     small_area_master
 WHERE
-    middle_area_code = '{params.middle_area_code}';
+    middle_area_code = ?;
 """
+    params = [params.middle_area_code]
     hss = HandlerS3Sqlte(
         os.environ["NAME_BUCKET_DATABASE"],
         os.environ["NAME_FILE_DATABASE"],
         os.environ["NAME_LOCK_FILE_DATABASE"]
     )
-    res = hss.exec_query(sql)
+    res = hss.exec_query(sql, params)
 
     return [r[0] for r in res]
 
