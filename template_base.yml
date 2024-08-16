@@ -19,13 +19,13 @@ Parameters:
     TaskNameScrapingDetail:
         Type: "String"
 
-    # # ARN - ACMのSSL証明書 - 東京
-    # ArnAcmSslCertficateTokyo:
-    #     Type: "String"
+    # ARN - ACMのSSL証明書 - 東京
+    ArnAcmSslCertficateTokyo:
+        Type: "String"
 
-    # # ARN - ACMのSSL証明書 - バージニア北部
-    # ArnAcmSslCertficateUsEast:
-    #     Type: "String"
+    # ARN - ACMのSSL証明書 - バージニア北部
+    ArnAcmSslCertficateUsEast:
+        Type: "String"
 
     # SSMパラメータストア名 - Line Notifyシステム通知
     ParameterStoreNameLineNotifyRestaurants:
@@ -52,13 +52,13 @@ Parameters:
         Type: "String"
         Default: "arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-p312-arm64-requests:7"
 
-    # # ドメイン
-    # Domain:
-    #     Type: "String"
+    # ドメイン
+    Domain:
+        Type: "String"
 
-    # # Basic認証
-    # FrontendBasicAuthorization:
-    #     Type: "String"
+    # Basic認証
+    FrontendBasicAuthorization:
+        Type: "String"
 
     # S3バケットプレフィックス
     S3BucketPrefix:
@@ -85,37 +85,32 @@ Resources:
     # EventBridgeスケジュールグループ
     - $file: resources/eventbridge/schedule_group.yml
 
-    # # Cloudfront - フロントエンド
-    # - $file: resources/cloudfront/frontend.yml
+    # Cloudfront - フロントエンド
+    - $file: resources/cloudfront/frontend.yml
 
     # S3 - データベース
     - $file: resources/s3/database.yml
     # S3 - 画像格納バケット
     - $file: resources/s3/images.yml
-    # # S3 - フロントエンド
-    # - $file: resources/s3/frontend.yml
+    # S3 - フロントエンド
+    - $file: resources/s3/frontend.yml
 
     # DynamoDB
-    - $file: resources/dynamodb/restaurants.yml
-    - $file: resources/dynamodb/restaurants_images.yml
     - $file: resources/dynamodb/restaurants_tasks.yml
 
-    # # Route53 - バックエンド
-    # - $file: resources/route53/backend.yml
-    # # Route53 - フロントエンド
-    # - $file: resources/route53/frontend.yml
+    # Route53 - バックエンド
+    - $file: resources/route53/backend.yml
+    # Route53 - フロントエンド
+    - $file: resources/route53/frontend.yml
 
-    # # APIGateway - バックエンド
-    # - $file: resources/apigateway/backend.yml
+    # APIGateway - バックエンド
+    - $file: resources/apigateway/backend.yml
 
     # Lambdaレイヤー - ホットペッパーAPI
     - $file: resources/lambda_layers/hotpepper_api_client.yml
 
     # Lambdaレイヤー - S3sqliteファイルハンドラー
     - $file: resources/lambda_layers/handler_s3_sqlite.yml
-
-    # Lambdaレイヤー - エリア構造体
-    - $file: resources/lambda_layers/ds_area.yml
 
     # Lambdaレイヤー - dynamodb_types
     - $file: resources/lambda_layers/dynamodb_types.yml
@@ -127,7 +122,6 @@ Resources:
     - $file: resources/error_common.yml
 
     # EventBridge - スケジュール登録
-    - $file: resources/invoke_handler_schedules.yml
     - $file: resources/handler_schedules.yml
 
     # Lambda - ジャンルマスタを更新
@@ -166,8 +160,8 @@ Resources:
     # Lambda - 新規の飲食店通知
     - $file: resources/notify_new_restaurants.yml
 
-    # # Lambda - 飲食店一覧情報を取得
-    # - $file: resources/get_restaurants.yml
+    # Lambda - 飲食店一覧情報を取得
+    - $file: resources/get_restaurants.yml
 
 Outputs:
     # LINE通知LambdaのARN
@@ -260,11 +254,11 @@ Outputs:
         Export:
             Name: !Sub "${AWS::StackName}-NotifyNewRestaurants"
 
-    # # 飲食店一覧情報の取得LambdaのARN
-    # ArnGetRestaurants:
-    #     Value: !GetAtt "LambdaGetRestaurants.Arn"
-    #     Export:
-    #         Name: !Sub "${AWS::StackName}-GetRestaurants"
+    # 飲食店一覧情報の取得LambdaのARN
+    ArnGetRestaurants:
+        Value: !GetAtt "LambdaGetRestaurants.Arn"
+        Export:
+            Name: !Sub "${AWS::StackName}-GetRestaurants"
 
     # S3データベース格納バケット名
     NameDatabaseBucket:
@@ -272,14 +266,14 @@ Outputs:
         Export:
             Name: !Sub "${AWS::StackName}-DatabaseBucketName"
 
-    # # S3画像格納バケット名
-    # NameImagesBucket:
-    #     Value: !GetAtt "S3Images.Arn"
-    #     Export:
-    #         Name: !Sub "${AWS::StackName}-ImagesBucketName"
+    # S3画像格納バケット名
+    NameImagesBucket:
+        Value: !GetAtt "S3Images.Arn"
+        Export:
+            Name: !Sub "${AWS::StackName}-ImagesBucketName"
 
-    # # API GatewayバックエンドのID
-    # IdApiBackend:
-    #     Value: !Ref "ApiGatewayBackend"
-    #     Export:
-    #         Name: !Sub "${AWS::StackName}-ApiGatewayBackend"
+    # API GatewayバックエンドのID
+    IdApiBackend:
+        Value: !Ref "ApiGatewayBackend"
+        Export:
+            Name: !Sub "${AWS::StackName}-ApiGatewayBackend"
