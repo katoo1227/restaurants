@@ -30,8 +30,11 @@ ApiGatewayBackendCustomDomain:
 
 # APIマッピング
 ApiGatewayBackendBasePathMapping:
-    Type: AWS::ApiGateway::BasePathMapping
+    Type: "AWS::ApiGateway::BasePathMapping"
     Properties:
-        DomainName: !Ref ApiGatewayBackendCustomDomain
-        RestApiId: !Ref ApiGatewayBackend
+        DomainName: !If
+            - "IsProd"
+            - !Sub "restaurants-api.${Domain}"
+            - !Sub "restaurants-api-dev.${Domain}"
+        RestApiId: !Ref "IdApiBackend"
         Stage: "v1"

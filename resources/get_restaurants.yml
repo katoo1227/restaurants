@@ -10,13 +10,10 @@ LambdaGetRestaurants:
         Role: !GetAtt "IamRoleGetRestaurants.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerHandlerS3Sqlite"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                NAME_DYNAMODB_RESTAURANTS: !Ref "DynamodbRestaurants"
-                NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LATITUDE: "MiddleAreaCodeLatitudeIndex"
-                NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LONGITUDE: "MiddleAreaCodeLongitudeIndex"
                 FRONTEND_DOMAIN: !If
                     - "IsProd"
                     - !Sub "https://${Route53Frontend}"
@@ -68,9 +65,8 @@ IamPolicyGetRestaurants:
                       - !GetAtt "LambdaErrorCommon.Arn"
                 - Effect: "Allow"
                   Action:
-                      - "dynamodb:Query"
-                  Resource:
-                      - !Sub "${DynamodbRestaurants.Arn}/index/MiddleAreaCodeLatitudeIndex"
-                      - !Sub "${DynamodbRestaurants.Arn}/index/MiddleAreaCodeLongitudeIndex"
+                      - "s3:GetObject"
+                      - "s3:PutObject"
+                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbFileName}"
         Roles:
             - !Ref "IamRoleGetRestaurants"

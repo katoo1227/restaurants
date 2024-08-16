@@ -2,15 +2,14 @@ import os
 import re
 import json
 import boto3
-import dynamodb_types
 from pydantic import BaseModel, ValidationError
+from handler_s3_sqlite import HandlerS3Sqlte
 
 class EventParams(BaseModel):
     """
     イベントパラメータ
     """
 
-    middle_area_code: str
     lat_min: float
     lat_max: float
     lng_min: float
@@ -137,85 +136,105 @@ def get_restaurants(evt: EventParams) -> list[dict]:
     -------
     list
     """
-    # 緯度経度それぞれの検索
-    lats = get_restaurants_lat_lng("lat", evt.middle_area_code, evt.lat_min, evt.lat_max)
-    lngs = get_restaurants_lat_lng("lng", evt.middle_area_code, evt.lng_min, evt.lng_max)
 
-    # どちらにも該当した飲食店を抽出
-    result = []
-    for lat in lats:
-        for lng in lngs:
-            if lat.id == lng.id:
-                result.append(lat.__dict__)
-                break
-
-    return result
-
-
-def get_restaurants_lat_lng(kind: str, middle_area_code: str, min: float, max: float) -> list[Restaurant]:
-    """
-    緯度または経度を指定して飲食店を取得
-
-    Parameters
-    ----------
-    kind: str
-        lat or lng
-    middle_area_code: str
-        中エリアコード
-    min: float
-        最小値
-    max: float
-        最大値
-
-    Returns
-    -------
-    list[Restaurant]
-    """
-    # lat or lngでなければエラー
-    if kind not in ["lat", "lng"]:
-        raise Exception(f"kindの値が不正。{kind}")
-
-    # 取得するカラム
-    projection_columns = [
-        "id",
-        "latitude",
-        "longitude",
-    ]
-
-    # フィルター用カラム
-    filter_columns = [
-        "#n", # nameは予約語なのでプレースホルダーを使用
-        "genre",
-        "sub_genre",
-        "address",
-        "open_hours",
-        "close_days",
-        "is_thumbnail",
-        "parking",
-    ]
-
-    # 緯度or経度によって変更
-    if kind == "lat":
-        index_name = os.environ["NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LATITUDE"]
-        sort_key = "latitude"
-        filter_columns.append("longitude")
-    else:
-        index_name = os.environ["NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LONGITUDE"]
-        sort_key = "longitude"
-        filter_columns.append("latitude")
-
-    res = boto3.client('dynamodb').query(
-        TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"],
-        IndexName=index_name,
-        KeyConditionExpression=f"middle_area_code = :middle_area_code AND {sort_key} BETWEEN :min AND :max",
-        ExpressionAttributeValues={
-            ":middle_area_code": dynamodb_types.serialize(middle_area_code),
-            ":min": dynamodb_types.serialize(min),
-            ":max": dynamodb_types.serialize(max)
-        },
-        ProjectionExpression=",".join(projection_columns),
-        FilterExpression=" AND ".join([f"attribute_exists({c})" for c in filter_columns]),
-        ExpressionAttributeNames={"#n": "name"}
+    hss = HandlerS3Sqlte(
+        os.environ["NAME_BUCKET_DATABASE"],
+        os.environ["NAME_FILE_DATABASE"],
+        os.environ["NAME_LOCK_FILE_DATABASE"],
     )
 
-    return [Restaurant(**dynamodb_types.deserialize_dict(i)) for i in res["Items"]]
+    # SQL
+    sql = f"""
+SELECT
+    *
+FROM
+    restaurants
+WHERE
+    latitude BETWEEN ? AND ?
+    AND longitude BETWEEN ? AND ?;
+"""
+    params = [evt.lat_min, evt.lat_max, evt.lng_min, evt.lng_max]
+    res = hss.exec_query(sql, params)
+    print(res)
+    # # 緯度経度それぞれの検索
+    # lats = get_restaurants_lat_lng("lat", evt.middle_area_code, evt.lat_min, evt.lat_max)
+    # lngs = get_restaurants_lat_lng("lng", evt.middle_area_code, evt.lng_min, evt.lng_max)
+
+    # # どちらにも該当した飲食店を抽出
+    # result = []
+    # for lat in lats:
+    #     for lng in lngs:
+    #         if lat.id == lng.id:
+    #             result.append(lat.__dict__)
+    #             break
+
+    # return result
+
+
+# def get_restaurants_lat_lng(kind: str, middle_area_code: str, min: float, max: float) -> list[Restaurant]:
+#     """
+#     緯度または経度を指定して飲食店を取得
+
+#     Parameters
+#     ----------
+#     kind: str
+#         lat or lng
+#     middle_area_code: str
+#         中エリアコード
+#     min: float
+#         最小値
+#     max: float
+#         最大値
+
+#     Returns
+#     -------
+#     list[Restaurant]
+#     """
+#     # lat or lngでなければエラー
+#     if kind not in ["lat", "lng"]:
+#         raise Exception(f"kindの値が不正。{kind}")
+
+#     # 取得するカラム
+#     projection_columns = [
+#         "id",
+#         "latitude",
+#         "longitude",
+#     ]
+
+#     # フィルター用カラム
+#     filter_columns = [
+#         "#n", # nameは予約語なのでプレースホルダーを使用
+#         "genre",
+#         "sub_genre",
+#         "address",
+#         "open_hours",
+#         "close_days",
+#         "is_thumbnail",
+#         "parking",
+#     ]
+
+#     # 緯度or経度によって変更
+#     if kind == "lat":
+#         index_name = os.environ["NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LATITUDE"]
+#         sort_key = "latitude"
+#         filter_columns.append("longitude")
+#     else:
+#         index_name = os.environ["NAME_DYNAMODB_GSI_MIDDLE_AREA_CODE_LONGITUDE"]
+#         sort_key = "longitude"
+#         filter_columns.append("latitude")
+
+#     res = boto3.client('dynamodb').query(
+#         TableName=os.environ["NAME_DYNAMODB_RESTAURANTS"],
+#         IndexName=index_name,
+#         KeyConditionExpression=f"middle_area_code = :middle_area_code AND {sort_key} BETWEEN :min AND :max",
+#         ExpressionAttributeValues={
+#             ":middle_area_code": dynamodb_types.serialize(middle_area_code),
+#             ":min": dynamodb_types.serialize(min),
+#             ":max": dynamodb_types.serialize(max)
+#         },
+#         ProjectionExpression=",".join(projection_columns),
+#         FilterExpression=" AND ".join([f"attribute_exists({c})" for c in filter_columns]),
+#         ExpressionAttributeNames={"#n": "name"}
+#     )
+
+#     return [Restaurant(**dynamodb_types.deserialize_dict(i)) for i in res["Items"]]
