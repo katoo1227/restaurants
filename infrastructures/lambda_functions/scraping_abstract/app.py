@@ -25,7 +25,15 @@ class Abstract(BaseModel):
     """
 
     id: str
+    small_area_name: str
     thumbnail_url: str | None
+
+
+HSS = HandlerS3Sqlte(
+    os.environ["NAME_BUCKET_DATABASE"],
+    os.environ["NAME_FILE_DATABASE"],
+    os.environ["NAME_LOCK_FILE_DATABASE"],
+)
 
 
 def lambda_handler(event, context):
@@ -49,17 +57,20 @@ def lambda_handler(event, context):
         if len(param_arr) != 2:
             raise Exception(f"paramが不正です。{task.param}")
 
+        # 必要なエリアコード一覧を取得
+        areas = get_area_codes(param_arr[0])
+
         # 概要情報の取得
-        abstracts = get_abstract_info(param_arr[0], int(param_arr[1]))
+        abstracts = get_abstract_info(areas[0], param_arr[0], int(param_arr[1]), areas[1])
 
         # サムネ画像をS3へ保存
         put_thumbnails(abstracts)
 
         # restaurantsへの登録
-        register_restaurants(param_arr[0], abstracts)
+        register_restaurants(abstracts)
 
         # 詳細情報スクレイピングタスクの登録
-        register_tasks_scraping_detail(abstracts)
+        register_tasks_scraping_detail([a.id for a in abstracts])
 
         # 概要情報スクレイピングタスクの削除
         delete_task(task.kind, task.param)
@@ -114,57 +125,77 @@ def delete_schedule() -> None:
     )
 
 
-def get_abstract_info(small_area_code: str, page_num: int) -> list[Abstract]:
+# エリア一覧を取得
+def get_area_codes(middle_area_code: str) -> tuple:
     """
-    概要情報を取得
+    必要なエリア一覧を取得
 
     Parameters
     ----------
     small_area_code: str
-        小エリアコード
-    page_num: int
-        ページ数
+        中エリアコード
 
     Returns
     -------
-    list[Abstract]
+    tuple
+        str
+            サービスエリアコード
+        list[str]
+            エリアリスト
     """
-
-    # ページURLに必要なデータを取得
-    sql = f"""
+    sql = """
 SELECT
-    service.code AS service_area_code,
-    middle.code AS middle_area_code,
-    small.code AS small_area_code
+    service.code,
+    small.code
 FROM
     small_area_master small
     INNER JOIN middle_area_master middle ON small.middle_area_code = middle.code
     INNER JOIN large_area_master large ON middle.large_area_code = large.code
     INNER JOIN service_area_master service ON large.service_area_code = service.code
 WHERE
-    small_area_code = ?;
+    middle.code = ?;
 """
-    params = [small_area_code]
-    hss = HandlerS3Sqlte(
-        os.environ["NAME_BUCKET_DATABASE"],
-        os.environ["NAME_FILE_DATABASE"],
-        os.environ["NAME_LOCK_FILE_DATABASE"],
-    )
-    res = hss.exec_query(sql, params)
+
+    res = HSS.exec_query(sql, [middle_area_code])
+    return res[0][0], [r[1] for r in res]
+
+
+def get_abstract_info(
+    service_area_code: str,
+    middle_area_code: str,
+    page_num: int,
+    small_area_codes: list[str]
+) -> list[Abstract]:
+    """
+    概要情報を取得
+
+    Parameters
+    ----------
+    serviec_area_code: str
+        サービスエリアコード
+    middle_area_code: str
+        中エリアコード
+    page_num: int
+        ページ数
+    small_area_codes: list[str]
+        小エリアコードリスト
+
+    Returns
+    -------
+    list[Abstract]
+    """
 
     # URL
     url_arr = [
         "https://www.hotpepper.jp",
-        res[0][0],
-        res[0][1],
-        res[0][2],
-        f"bgn{page_num}",
+        service_area_code,
+        middle_area_code,
+        "_".join(small_area_codes),
+        f"bgn{page_num}"
     ]
-    url = "/".join(url_arr) + "/"
+    url = "/".join(url_arr)
 
-    # HTML解析 2回目以降のアクセスは結果が変わらないので、2回アクセスする
-    html = requests.get(url)
-    time.sleep(1)
+    # HTML解析
     html = requests.get(url)
     soup = BeautifulSoup(html.content, "html.parser")
 
@@ -172,7 +203,7 @@ WHERE
     if len(restaurants) == 0:
         raise Exception(f"「.shopDetailCoreInner」が存在しません。{url}")
 
-    # サムネ画像と飲食店IDを取得
+    # サムネ画像と飲食店IDを小エリア名を取得
     results = []
     for r in restaurants:
         # サムネ画像
@@ -189,15 +220,24 @@ WHERE
         if match is None:
             raise Exception(f"飲食店IDの取得に失敗しました。{str(link)}")
         id = match.group(1)
-        try:
-            results.append(
-                Abstract(
-                    id=id,
-                    thumbnail_url=thumbnail_url,
-                )
+
+        # 小エリア名
+        genre_name = r.select_one(".parentGenreName")
+        if genre_name is None:
+            raise Exception(f"「.parentGenreName」が存在しません。{url}")
+        genre_name_arr = genre_name.text.split("｜")
+        if len(genre_name_arr) != 2:
+            raise Exception(f"小エリアの値を取得できません。{url}")
+        small_area_name = genre_name_arr[1]
+
+        # 結果配列に格納
+        results.append(
+            Abstract(
+                id=id,
+                small_area_name=small_area_name,
+                thumbnail_url=thumbnail_url,
             )
-        except Exception as e:
-            print(e)
+        )
 
     return results
 
@@ -248,17 +288,35 @@ def put_thumbnails(abstracts: list[Abstract]) -> None:
             time.sleep(1)
 
 
-def register_restaurants(small_area_code: str, abstracts: list[Abstract]) -> None:
+def register_restaurants(abstracts: list[Abstract]) -> None:
     """
     restaurantsへの登録
 
     Parameters
     ----------
-    small_area_code: str
-        小エリアコード
     abstracts: list[Abstract]
         概要情報リスト
     """
+    # 小エリア名とコードのdictを作成
+    small_area_names = list(
+        set(
+            [a.small_area_name for a in abstracts]
+        )
+    )
+    sql = f"""
+SELECT
+    code,
+    name
+FROM
+    small_area_master
+WHERE
+    name IN ({', '.join(['?'] * len(small_area_names))});
+"""
+    res = HSS.exec_query(sql, small_area_names)
+    small_area_name_codes = {
+        r[1]: r[0]
+        for r in res if r != ""
+    }
 
     # SQL
     values_row_str = f"({', '.join(['?'] * 3)})"
@@ -278,7 +336,7 @@ ON CONFLICT(id) DO UPDATE SET
         is_thumbnail = 0
         if a.thumbnail_url is not None:
             is_thumbnail = 1
-        params.extend([a.id, small_area_code, is_thumbnail])
+        params.extend([a.id, small_area_name_codes[a.small_area_name], is_thumbnail])
     hss = HandlerS3Sqlte(
         os.environ["NAME_BUCKET_DATABASE"],
         os.environ["NAME_FILE_DATABASE"],
@@ -287,14 +345,14 @@ ON CONFLICT(id) DO UPDATE SET
     hss.exec_query_with_lock(sql, params)
 
 
-def register_tasks_scraping_detail(abstracts: list[Abstract]) -> None:
+def register_tasks_scraping_detail(ids: list[str]) -> None:
     """
     詳細情報スクレイピングタスクの登録
 
     Parameters
     ----------
-    abstracts: list[Abstract]
-        概要情報リスト
+    ids: list[str]
+        飲食店IDリスト
     """
 
     # 追加データの作成
@@ -302,11 +360,11 @@ def register_tasks_scraping_detail(abstracts: list[Abstract]) -> None:
         {
             "PutRequest": {
                 "Item": dynamodb_types.serialize_dict(
-                    {"kind": os.environ["NAME_TASK_SCRAPING_DETAIL"], "param": a.id}
+                    {"kind": os.environ["NAME_TASK_SCRAPING_DETAIL"], "param": id}
                 )
             }
         }
-        for a in abstracts
+        for id in ids
     ]
 
     # batch_write_itemは一度に25件までしか追加できないため
