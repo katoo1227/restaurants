@@ -145,9 +145,6 @@ Resources:
     # Lambda - 小エリアマスタを更新
     - $file: resources/update_small_area_master.yml
 
-    # Lambda - 小エリア一覧を登録
-    - $file: resources/register_tasks_small_areas.yml
-
     # Lambda - 概要一覧ページの登録
     - $file: resources/register_tasks_pages.yml
 
@@ -221,12 +218,6 @@ Outputs:
         Export:
             Name: !Sub "${AWS::StackName}-LambdaUpdateSmallAreaMaster"
 
-    # 概要情報スクレイピングタスクの登録（小エリアごと）LambdaのARN
-    ArnLambdaRegisterTasksSmallAreas:
-        Value: !GetAtt "LambdaRegisterTasksSmallAreas.Arn"
-        Export:
-            Name: !Sub "${AWS::StackName}-LambdaRegisterTasksSmallAreas"
-
     # 概要情報スクレイピングタスクの登録（ページごと）LambdaのARN
     ArnLambdaRegisterTasksPages:
         Value: !GetAtt "LambdaRegisterTasksPages.Arn"
@@ -274,9 +265,3 @@ Outputs:
         Value: !GetAtt "S3Images.Arn"
         Export:
             Name: !Sub "${AWS::StackName}-ImagesBucketName"
-
-    # # API GatewayバックエンドのID
-    # IdApiBackend:
-    #     Value: !Ref "ApiGatewayBackend"
-    #     Export:
-    #         Name: !Sub "${AWS::StackName}-ApiGatewayBackend"
