@@ -1,36 +1,31 @@
 # Lambda
-LambdaRegisterTasksSmallAreas:
+LambdaUpdateLargeServiceAreaMaster:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/register_tasks_small_areas/"
+        CodeUri: "./lambda_functions/update_large_service_area_master/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksSmallAreasProd"
-            - "RestaurantsRegisterTasksSmallAreasDev"
-        Role: !GetAtt "IamRoleRegisterTasksSmallAreas.Arn"
+            - "RestaurantsUpdateLargeServiceAreaMasterProd"
+            - "RestaurantsUpdateLargeServiceAreaMasterDev"
+        Role: !GetAtt "IamRoleUpdateLargeServiceAreaMaster.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerHandlerS3Sqlite"
-            - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerHotpepperApiClient"
+            - !Ref "LambdaLayerSqliteClient"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
-                ARN_LAMBDA_REGISTER_TASKS_PAGES: !GetAtt "LambdaRegisterTasksPages.Arn"
-                ARN_IAM_ROLE_INVOKE_REGISTER_PAGES: !GetAtt "IamRoleInvokeRegisterTasksPages.Arn"
-                NAME_SCHEDULE_GROUP: !Ref "EventBridgeScheduleGroup"
-                NAME_TASK_REGISTER_PAGES: !Ref "TaskNameRegisterTasksPages"
+                PARAMETER_STORE_NAME_HOTPEPPER_API_KEY: !Ref "ParameterStoreNameHotpepperApiKey"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
-                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
         Timeout: 30
 
         Events:
-            EventBridgeScheduleLambdaRegisterTasksSmallAreas:
+            EventBridgeScheduleLambdaUpdateLargeServiceAreaMaster:
                 Type: "ScheduleV2"
                 Properties:
                     ScheduleExpression: cron(0 1 ? * SUN *)
@@ -39,19 +34,18 @@ LambdaRegisterTasksSmallAreas:
                     GroupName: !Ref "EventBridgeScheduleGroup"
                     Name: !If
                         - "IsProd"
-                        - "RegisterTasksSmallAreasProd"
-                        - "RegisterTasksSmallAreasDev"
-                    RoleArn: !GetAtt "IamRoleInvokeRegisterTasksSmallAreas.Arn"
-                    Input: '{"middle_area_code": "Y883"}'
+                        - "UpdateLargeServiceAreaMasterProd"
+                        - "UpdateLargeServiceAreaMasterDev"
+                    RoleArn: !GetAtt "IamRoleInvokeUpdateLargeServiceAreaMaster.Arn"
 
 # IAMロール
-IamRoleRegisterTasksSmallAreas:
+IamRoleUpdateLargeServiceAreaMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksSmallAreasProd"
-            - "RestaurantsRegisterTasksSmallAreasDev"
+            - "RestaurantsUpdateLargeServiceAreaMasterProd"
+            - "RestaurantsUpdateLargeServiceAreaMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -61,42 +55,48 @@ IamRoleRegisterTasksSmallAreas:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyRegisterTasksSmallAreas:
+IamPolicyUpdateLargeServiceAreaMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksSmallAreasProd"
-            - "RestaurantsRegisterTasksSmallAreasDev"
+            - "RestaurantsUpdateLargeServiceAreaMasterProd"
+            - "RestaurantsUpdateLargeServiceAreaMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameHotpepperApiKey}"
+                - Effect: "Allow"
+                  Action:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
-                      - !GetAtt "LambdaHandlerSchedules.Arn"
                 - Effect: "Allow"
                   Action:
                       - "s3:GetObject"
+                      - "s3:PutObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbFileName}"
                 - Effect: "Allow"
                   Action:
-                      - "dynamodb:BatchWriteItem"
-                  Resource:
-                      - !GetAtt "DynamodbRestaurantsTasks.Arn"
+                      - "s3:GetObject"
+                      - "s3:PutObject"
+                      - "s3:DeleteObject"
+                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
         Roles:
-            - !Ref "IamRoleRegisterTasksSmallAreas"
+            - !Ref "IamRoleUpdateLargeServiceAreaMaster"
 
-# IAMロール
-IamRoleInvokeRegisterTasksSmallAreas:
+# スケジュール実行IAMロール
+IamRoleInvokeUpdateLargeServiceAreaMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeRegisterTasksSmallAreasProd"
-            - "RestaurantsInvokeRegisterTasksSmallAreasDev"
+            - "RestaurantsInvokeUpdateLargeServiceAreaMasterProd"
+            - "RestaurantsInvokeUpdateLargeServiceAreaMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -105,20 +105,20 @@ IamRoleInvokeRegisterTasksSmallAreas:
                       Service: "scheduler.amazonaws.com"
                   Action: "sts:AssumeRole"
 
-# IAMポリシー
-IamPolicyInvokeRegisterTasksSmallAreas:
+# スケジュール実行IAMポリシー
+IamPolicyInvokeUpdateLargeServiceAreaMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeRegisterTasksSmallAreasProd"
-            - "RestaurantsInvokeRegisterTasksSmallAreasDev"
+            - "RestaurantsInvokeUpdateLargeServiceAreaMasterProd"
+            - "RestaurantsInvokeUpdateLargeServiceAreaMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaRegisterTasksSmallAreas.Arn"
+                  Resource: !GetAtt "LambdaUpdateLargeServiceAreaMaster.Arn"
         Roles:
-            - !Ref "IamRoleInvokeRegisterTasksSmallAreas"
+            - !Ref "IamRoleInvokeUpdateLargeServiceAreaMaster"

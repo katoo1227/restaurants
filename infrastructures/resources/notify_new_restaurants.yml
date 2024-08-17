@@ -1,44 +1,51 @@
 # Lambda
-LambdaRegisterTasksPages:
+LambdaNotifyNewRestaurants:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/register_tasks_pages/"
+        CodeUri: "./lambda_functions/notify_new_restaurants/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksPagesProd"
-            - "RestaurantsRegisterTasksPagesDev"
-        Role: !GetAtt "IamRoleRegisterTasksPages.Arn"
+            - "RestaurantsNotifyNewRestaurantsProd"
+            - "RestaurantsNotifyNewRestaurantsDev"
+        Role: !GetAtt "IamRoleNotifyNewRestaurants.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerHandlerS3Sqlite"
+            - !Ref "LambdaLayerSqliteClient"
             - !Ref "LambdaLayerDynamodbTypes"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
-                ARN_LAMBDA_SCRAPING_ABSTRACT: !GetAtt "LambdaScrapingAbstract.Arn"
-                ARN_IAM_ROLE_INVOKE_SCRAPING_ABSTRACT: !GetAtt "IamRoleInvokeScrapingAbstract.Arn"
-                NAME_SCHEDULE_GROUP: !Ref "EventBridgeScheduleGroup"
-                NAME_TASK_REGISTER_PAGES: !Ref "TaskNameRegisterTasksPages"
-                NAME_TASK_SCRAPING_ABSTRACT: !Ref "TaskNameScrapingAbstract"
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
-                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
-
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
         Timeout: 30
 
+        Events:
+            EventBridgeScheduleLambdaNotifyNewRestaurants:
+                Type: "ScheduleV2"
+                Properties:
+                    ScheduleExpression: cron(0 1 ? * SAT *)
+                    ScheduleExpressionTimezone: "Asia/Tokyo"
+                    State: ENABLED
+                    GroupName: !Ref "EventBridgeScheduleGroup"
+                    Name: !If
+                        - "IsProd"
+                        - "NotifyNewRestaurantsProd"
+                        - "NotifyNewRestaurantsDev"
+                    RoleArn: !GetAtt "IamRoleInvokeNotifyNewRestaurants.Arn"
+
 # IAMロール
-IamRoleRegisterTasksPages:
+IamRoleNotifyNewRestaurants:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksPagesProd"
-            - "RestaurantsRegisterTasksPagesDev"
+            - "RestaurantsNotifyNewRestaurantsProd"
+            - "RestaurantsNotifyNewRestaurantsDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -48,13 +55,13 @@ IamRoleRegisterTasksPages:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyRegisterTasksPages:
+IamPolicyNotifyNewRestaurants:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsRegisterTasksPagesProd"
-            - "RestaurantsRegisterTasksPagesDev"
+            - "RestaurantsNotifyNewRestaurantsProd"
+            - "RestaurantsNotifyNewRestaurantsDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -63,35 +70,29 @@ IamPolicyRegisterTasksPages:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
-                      - !GetAtt "LambdaHandlerSchedules.Arn"
-                - Effect: "Allow"
-                  Action:
-                      - "dynamodb:Query"
-                      - "dynamodb:DeleteItem"
-                      - "dynamodb:BatchWriteItem"
-                  Resource: !GetAtt "DynamodbRestaurantsTasks.Arn"
+                      - !GetAtt "LambdaLineNotify.Arn"
                 - Effect: "Allow"
                   Action:
                       - "s3:GetObject"
+                      - "s3:PutObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbFileName}"
                 - Effect: "Allow"
                   Action:
-                      - "dynamodb:Query"
-                      - "dynamodb:DeleteItem"
-                      - "dynamodb:BatchWriteItem"
-                  Resource:
-                      - !GetAtt "DynamodbRestaurantsTasks.Arn"
+                      - "s3:GetObject"
+                      - "s3:PutObject"
+                      - "s3:DeleteObject"
+                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
         Roles:
-            - !Ref "IamRoleRegisterTasksPages"
+            - !Ref "IamRoleNotifyNewRestaurants"
 
 # IAMロール
-IamRoleInvokeRegisterTasksPages:
+IamRoleInvokeNotifyNewRestaurants:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeRegisterTasksPagesProd"
-            - "RestaurantsInvokeRegisterTasksPagesDev"
+            - "RestaurantsInvokeNotifyNewRestaurantsProd"
+            - "RestaurantsInvokeNotifyNewRestaurantsDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -101,19 +102,19 @@ IamRoleInvokeRegisterTasksPages:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyInvokeRegisterTasksPages:
+IamPolicyInvokeNotifyNewRestaurants:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeRegisterTasksPagesProd"
-            - "RestaurantsInvokeRegisterTasksPagesDev"
+            - "RestaurantsInvokeNotifyNewRestaurantsProd"
+            - "RestaurantsInvokeNotifyNewRestaurantsDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaRegisterTasksPages.Arn"
+                  Resource: !GetAtt "LambdaNotifyNewRestaurants.Arn"
         Roles:
-            - !Ref "IamRoleInvokeRegisterTasksPages"
+            - !Ref "IamRoleInvokeNotifyNewRestaurants"

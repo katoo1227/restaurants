@@ -10,7 +10,7 @@ LambdaGetRestaurants:
         Role: !GetAtt "IamRoleGetRestaurants.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerHandlerS3Sqlite"
+            - !Ref "LambdaLayerSqliteClient"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"

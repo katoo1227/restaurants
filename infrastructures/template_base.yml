@@ -52,6 +52,18 @@ Parameters:
         Type: "String"
         Default: "arn:aws:lambda:ap-northeast-1:770693421928:layer:Klayers-p312-arm64-requests:7"
 
+    # Lambdaレイヤー - ホットペッパーAPIクライアント
+    LambdaLayerHotpepperApiClient:
+        Type: "String"
+
+    # Lambdaレイヤー - データベースクライアント
+    LambdaLayerSqliteClient:
+        Type: "String"
+
+    # Lambdaレイヤー - DynamoDBの型変換
+    LambdaLayerDynamodbTypes:
+        Type: "String"
+
     # ドメイン
     Domain:
         Type: "String"
@@ -105,15 +117,6 @@ Resources:
 
     # APIGateway - バックエンド
     - $file: resources/apigateway/backend.yml
-
-    # Lambdaレイヤー - ホットペッパーAPI
-    - $file: resources/lambda_layers/hotpepper_api_client.yml
-
-    # Lambdaレイヤー - S3sqliteファイルハンドラー
-    - $file: resources/lambda_layers/handler_s3_sqlite.yml
-
-    # Lambdaレイヤー - dynamodb_types
-    - $file: resources/lambda_layers/dynamodb_types.yml
 
     # Lambda - LINE通知
     - $file: resources/line_notify.yml
@@ -272,8 +275,8 @@ Outputs:
         Export:
             Name: !Sub "${AWS::StackName}-ImagesBucketName"
 
-    # API GatewayバックエンドのID
-    IdApiBackend:
-        Value: !Ref "ApiGatewayBackend"
-        Export:
-            Name: !Sub "${AWS::StackName}-ApiGatewayBackend"
+    # # API GatewayバックエンドのID
+    # IdApiBackend:
+    #     Value: !Ref "ApiGatewayBackend"
+    #     Export:
+    #         Name: !Sub "${AWS::StackName}-ApiGatewayBackend"

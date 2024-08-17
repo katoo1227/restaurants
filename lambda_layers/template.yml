@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Parameters:
+    # デプロイ先環境の設定
+    EnvironmentType:
+        Type: "String"
+        AllowedValues: ["dev", "prod"]
+
+Conditions:
+  # 本番環境かどうか
+  IsProd: !Equals [!Ref "EnvironmentType", "prod"]
+
+Resources:
+    # ホットペッパーAPIクライアント
+    HotpepperApiClient:
+        Type: "AWS::Serverless::LayerVersion"
+        Properties:
+            LayerName: !If
+                - "IsProd"
+                - "RestaurantsHotpepperApiClientProd"
+                - "RestaurantsHotpepperApiClientDev"
+            ContentUri: "./src/hotpepper_api_client/"
+            CompatibleRuntimes:
+                - "python3.12"
+
+    # データベースクライアント
+    SqliteClient:
+        Type: "AWS::Serverless::LayerVersion"
+        Properties:
+            LayerName: !If
+                - "IsProd"
+                - "RestaurantsSqliteClientProd"
+                - "RestaurantsSqliteClientDev"
+            ContentUri: "./src/splite_client/"
+            CompatibleRuntimes:
+                - "python3.12"
+
+    # DynamoDBの型変換
+    DynamodbTypes:
+        Type: "AWS::Serverless::LayerVersion"
+        Properties:
+            LayerName: !If
+                - "IsProd"
+                - "RestaurantsDynamodbTypesProd"
+                - "RestaurantsDynamodbTypesDev"
+            ContentUri: "./src/dynamodb_types/"
+            CompatibleRuntimes:
+                - "python3.12"
+
+Outputs:
+    # ホットペッパーAPIクライアントのARN
+    ArnHotpepperApiClient:
+        Value: !Ref "HotpepperApiClient"
+        Export:
+            Name: "ArnHotpepperApiClient"
+
+    # データベースクライアントのARN
+    ArnSqliteClient:
+        Value: !Ref "SqliteClient"
+        Export:
+            Name: "ArnSqliteClient"
+
+    # DynamoDB型変換クライアント
+    ArnDynamodbTypes:
+        Value: !Ref "DynamodbTypes"
+        Export:
+            Name: "ArnDynamodbTypes"

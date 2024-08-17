@@ -32,15 +32,29 @@ check_env() {
 # SAMテンプレートの作成
 create_template() {
     # ベースパス
-    base_path="$(pwd)/template_base.yml"
+    base_path="./template_base.yml"
 
     # 出力先
-    yml_path="$(pwd)/template.yml"
+    yml_path="./template.yml"
 
     # 「$file: ~~」をテンプレートに展開
     yq '(.. | select(has("$file"))) |= load(.$file) | .Resources = (.Resources[] as $item ireduce ({}; . * $item))' "$base_path" >"$yml_path"
 
     echo "$yml_path"
+}
+
+# Lambdaレイヤーのデプロイ出力を取得
+get_lambda_layers_deployment_outputs() {
+    env=$1
+
+    stack_name="RestaurantsLambdaLayers${env^}"
+    res=$(sam list stack-outputs --stack-name $stack_name --output json)
+    declare -A outputs
+    while IFS="=" read -r key value; do
+        outputs["$key"]="$value"
+    done < <(echo "$res" | jq -r '.[] | "\(.OutputKey)=\(.OutputValue)"')
+
+    echo "$(declare -p outputs)"
 }
 
 # ACMのSSL証明書ARNを取得
@@ -62,30 +76,13 @@ get_basic_authorization() {
         --output text
 }
 
-# Lambdaレイヤーの作成
-make_lambda_layers() {
-    # 各レイヤーディレクトリのループ
-    for layer_dir in ./lambda_layers/*/; do
-        dir="${layer_dir%/}"
-        python_dir="$dir/python"
-
-        # pythonディレクトリの作り直し
-        rm -rf "$python_dir"
-        mkdir -p "$python_dir"
-
-        # ソースコードの配置
-        cp $dir/*.py $python_dir
-
-        # requirements.txtがあればpip install
-        if [ -f "${dir}/requirements.txt" ]; then
-            pip install --upgrade -r "${dir}/requirements.txt" -t "$python_dir"
-        fi
-    done
-}
-
 # ビルド・デプロイ
 build_deploy() {
     env=$1
+
+    # outputsの展開
+    eval "$2"
+
     sam build --template-file "$yml_path"
     sam deploy \
         --config-env=$env \
@@ -102,18 +99,10 @@ build_deploy() {
         ParameterStoreNameGcpApiKey="${PARAMETER_STORE_NAME_GCP_API_KEY}" \
         Domain="${DOMAIN}" \
         FrontendBasicAuthorization=$(get_basic_authorization) \
-        S3BucketPrefix="$S3_BUCKET_PREFIX"
-}
-
-# S3画像格納バケットに初期ディレクトリを配置
-init_s3_images() {
-    env=$1
-
-    stack_name="RestaurantsDeploy${env^}"
-    outputs=$(sam list stack-outputs --stack-name $stack_name --output json)
-    bucket_name=$(echo $outputs | jq -r --arg key "NameImagesBucket" '.[] | select(.OutputKey == $key) | .OutputValue')
-    aws s3api put-object --bucket "$bucket_name" --key "thumbnails/"
-    aws s3api put-object --bucket "$bucket_name" --key "images/"
+        S3BucketPrefix="$S3_BUCKET_PREFIX" \
+        LambdaLayerHotpepperApiClient=${outputs["ArnHotpepperApiClient"]} \
+        LambdaLayerSqliteClient=${outputs["ArnSqliteClient"]} \
+        LambdaLayerDynamodbTypes=${outputs["ArnDynamodbTypes"]}
 }
 
 # デプロイ処理
@@ -124,21 +113,18 @@ deploy() {
     # SAMテンプレートの作成
     yml_path=$(create_template)
 
-    # Lambdaレイヤーの作成
-    make_lambda_layers
+    # Lambdaレイヤーのデプロイ出力を定数にセット
+    outputs=$(get_lambda_layers_deployment_outputs $env)
 
     # SAM ビルド・デプロイ
-    build_deploy $env
-
-    # S3画像格納バケットに初期フォルダの設置
-    init_s3_images $env
+    build_deploy "$env" "$outputs"
 }
 
 # 環境設定ファイルの読み込み
 env=$(check_env $1)
 
 # 環境設定ファイルの読み込み
-source "$(pwd)/deploy_${env}.env"
+source "./deploy_${env}.env"
 
 # デプロイ
 deploy $env
