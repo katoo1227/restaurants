@@ -18,6 +18,9 @@ LambdaGetRestaurants:
                     - "IsProd"
                     - !Sub "https://${Route53Frontend}"
                     - !Sub "https://${Route53Frontend},https://localhost"
+                NAME_BUCKET_DATABASE: !Ref "S3Database"
+                NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
+                NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
