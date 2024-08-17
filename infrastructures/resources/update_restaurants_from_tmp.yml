@@ -1,21 +1,19 @@
 # Lambda
-LambdaUpdateSmallAreaMaster:
+LambdaUpdateRestaurantsFromTmp:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/update_small_area_master/"
+        CodeUri: "./lambda_functions/update_restaurants_from_tmp/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsUpdateSmallAreaMasterProd"
-            - "RestaurantsUpdateSmallAreaMasterDev"
-        Role: !GetAtt "IamRoleUpdateSmallAreaMaster.Arn"
+            - "RestaurantsUpdateRestaurantsFromTmpProd"
+            - "RestaurantsUpdateRestaurantsFromTmpDev"
+        Role: !GetAtt "IamRoleUpdateRestaurantsFromTmp.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerExecHotpepperApi"
-            - !Ref "LambdaLayerHandlerS3Sqlite"
+            - !Ref "LambdaLayerSqliteClient"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                PARAMETER_STORE_NAME_HOTPEPPER_API_KEY: !Ref "ParameterStoreNameHotpepperApiKey"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
@@ -25,27 +23,27 @@ LambdaUpdateSmallAreaMaster:
         Timeout: 30
 
         Events:
-            EventBridgeScheduleLambdaUpdateSmallAreaMaster:
+            EventBridgeScheduleLambdaUpdateRestaurantsFromTmp:
                 Type: "ScheduleV2"
                 Properties:
-                    ScheduleExpression: cron(0 5 ? * SUN *)
+                    ScheduleExpression: cron(0 0 ? * SAT *)
                     ScheduleExpressionTimezone: "Asia/Tokyo"
                     State: ENABLED
                     GroupName: !Ref "EventBridgeScheduleGroup"
                     Name: !If
                         - "IsProd"
-                        - "UpdateSmallAreaMasterProd"
-                        - "UpdateSmallAreaMasterDev"
-                    RoleArn: !GetAtt "IamRoleInvokeUpdateSmallAreaMaster.Arn"
+                        - "UpdateRestaurantsFromTmpProd"
+                        - "UpdateRestaurantsFromTmpDev"
+                    RoleArn: !GetAtt "IamRoleInvokeUpdateRestaurantsFromTmp.Arn"
 
 # IAMロール
-IamRoleUpdateSmallAreaMaster:
+IamRoleUpdateRestaurantsFromTmp:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsUpdateSmallAreaMasterProd"
-            - "RestaurantsUpdateSmallAreaMasterDev"
+            - "RestaurantsUpdateRestaurantsFromTmpProd"
+            - "RestaurantsUpdateRestaurantsFromTmpDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -55,21 +53,16 @@ IamRoleUpdateSmallAreaMaster:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyUpdateSmallAreaMaster:
+IamPolicyUpdateRestaurantsFromTmp:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsUpdateSmallAreaMasterProd"
-            - "RestaurantsUpdateSmallAreaMasterDev"
+            - "RestaurantsUpdateRestaurantsFromTmpProd"
+            - "RestaurantsUpdateRestaurantsFromTmpDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
-                - Effect: "Allow"
-                  Action:
-                      - "ssm:GetParameter"
-                  Resource:
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameHotpepperApiKey}"
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
@@ -87,16 +80,16 @@ IamPolicyUpdateSmallAreaMaster:
                       - "s3:DeleteObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
         Roles:
-            - !Ref "IamRoleUpdateSmallAreaMaster"
+            - !Ref "IamRoleUpdateRestaurantsFromTmp"
 
-# スケジュール実行IAMロール
-IamRoleInvokeUpdateSmallAreaMaster:
+# IAMロール
+IamRoleInvokeUpdateRestaurantsFromTmp:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateSmallAreaMasterProd"
-            - "RestaurantsInvokeUpdateSmallAreaMasterDev"
+            - "RestaurantsInvokeUpdateRestaurantsFromTmpProd"
+            - "RestaurantsInvokeUpdateRestaurantsFromTmpDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -105,20 +98,20 @@ IamRoleInvokeUpdateSmallAreaMaster:
                       Service: "scheduler.amazonaws.com"
                   Action: "sts:AssumeRole"
 
-# スケジュール実行IAMポリシー
-IamPolicyInvokeUpdateSmallAreaMaster:
+# IAMポリシー
+IamPolicyInvokeUpdateRestaurantsFromTmp:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateSmallAreaMasterProd"
-            - "RestaurantsInvokeUpdateSmallAreaMasterDev"
+            - "RestaurantsInvokeUpdateRestaurantsFromTmpProd"
+            - "RestaurantsInvokeUpdateRestaurantsFromTmpDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaUpdateSmallAreaMaster.Arn"
+                  Resource: !GetAtt "LambdaUpdateRestaurantsFromTmp.Arn"
         Roles:
-            - !Ref "IamRoleInvokeUpdateSmallAreaMaster"
+            - !Ref "IamRoleInvokeUpdateRestaurantsFromTmp"

@@ -1,17 +1,17 @@
 # Lambda
-LambdaUpdateLargeServiceAreaMaster:
+LambdaUpdateMiddleAreaMaster:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/update_large_service_area_master/"
+        CodeUri: "./lambda_functions/update_middle_area_master/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsUpdateLargeServiceAreaMasterProd"
-            - "RestaurantsUpdateLargeServiceAreaMasterDev"
-        Role: !GetAtt "IamRoleUpdateLargeServiceAreaMaster.Arn"
+            - "RestaurantsUpdateMiddleAreaMasterProd"
+            - "RestaurantsUpdateMiddleAreaMasterDev"
+        Role: !GetAtt "IamRoleUpdateMiddleAreaMaster.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerExecHotpepperApi"
-            - !Ref "LambdaLayerHandlerS3Sqlite"
+            - !Ref "LambdaLayerHotpepperApiClient"
+            - !Ref "LambdaLayerSqliteClient"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
@@ -25,27 +25,27 @@ LambdaUpdateLargeServiceAreaMaster:
         Timeout: 30
 
         Events:
-            EventBridgeScheduleLambdaUpdateLargeServiceAreaMaster:
+            EventBridgeScheduleLambdaUpdateMiddleAreaMaster:
                 Type: "ScheduleV2"
                 Properties:
-                    ScheduleExpression: cron(0 1 ? * SUN *)
+                    ScheduleExpression: cron(0 4 ? * SUN *)
                     ScheduleExpressionTimezone: "Asia/Tokyo"
                     State: ENABLED
                     GroupName: !Ref "EventBridgeScheduleGroup"
                     Name: !If
                         - "IsProd"
-                        - "UpdateLargeServiceAreaMasterProd"
-                        - "UpdateLargeServiceAreaMasterDev"
-                    RoleArn: !GetAtt "IamRoleInvokeUpdateLargeServiceAreaMaster.Arn"
+                        - "UpdateMiddleAreaMasterProd"
+                        - "UpdateMiddleAreaMasterDev"
+                    RoleArn: !GetAtt "IamRoleInvokeUpdateMiddleAreaMaster.Arn"
 
 # IAMロール
-IamRoleUpdateLargeServiceAreaMaster:
+IamRoleUpdateMiddleAreaMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsUpdateLargeServiceAreaMasterProd"
-            - "RestaurantsUpdateLargeServiceAreaMasterDev"
+            - "RestaurantsUpdateMiddleAreaMasterProd"
+            - "RestaurantsUpdateMiddleAreaMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -55,13 +55,13 @@ IamRoleUpdateLargeServiceAreaMaster:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyUpdateLargeServiceAreaMaster:
+IamPolicyUpdateMiddleAreaMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsUpdateLargeServiceAreaMasterProd"
-            - "RestaurantsUpdateLargeServiceAreaMasterDev"
+            - "RestaurantsUpdateMiddleAreaMasterProd"
+            - "RestaurantsUpdateMiddleAreaMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -87,16 +87,16 @@ IamPolicyUpdateLargeServiceAreaMaster:
                       - "s3:DeleteObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
         Roles:
-            - !Ref "IamRoleUpdateLargeServiceAreaMaster"
+            - !Ref "IamRoleUpdateMiddleAreaMaster"
 
 # スケジュール実行IAMロール
-IamRoleInvokeUpdateLargeServiceAreaMaster:
+IamRoleInvokeUpdateMiddleAreaMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateLargeServiceAreaMasterProd"
-            - "RestaurantsInvokeUpdateLargeServiceAreaMasterDev"
+            - "RestaurantsInvokeUpdateMiddleAreaMasterProd"
+            - "RestaurantsInvokeUpdateMiddleAreaMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -106,19 +106,19 @@ IamRoleInvokeUpdateLargeServiceAreaMaster:
                   Action: "sts:AssumeRole"
 
 # スケジュール実行IAMポリシー
-IamPolicyInvokeUpdateLargeServiceAreaMaster:
+IamPolicyInvokeUpdateMiddleAreaMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateLargeServiceAreaMasterProd"
-            - "RestaurantsInvokeUpdateLargeServiceAreaMasterDev"
+            - "RestaurantsInvokeUpdateMiddleAreaMasterProd"
+            - "RestaurantsInvokeUpdateMiddleAreaMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaUpdateLargeServiceAreaMaster.Arn"
+                  Resource: !GetAtt "LambdaUpdateMiddleAreaMaster.Arn"
         Roles:
-            - !Ref "IamRoleInvokeUpdateLargeServiceAreaMaster"
+            - !Ref "IamRoleInvokeUpdateMiddleAreaMaster"

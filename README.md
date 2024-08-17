@@ -50,6 +50,8 @@ https://console.cloud.google.com/?hl=ja
 
 ### 開発用・本番用の環境設定ファイルを準備
 ```sh
+# infeastructures, lambda_layers共に実施
+
 # 開発環境
 cp deploy.env.example deploy_dev.env
 
@@ -57,10 +59,27 @@ cp deploy.env.example deploy_dev.env
 cp deploy.env.example deploy_prod.env
 ```
 
-もろもろ設定してください
-
 ## デプロイ
+
+### infrastructuresとlambda_layersについて
+
+- infrastructures
+    - バックエンドはLambda関数のデプロイを兼任するため、実質はインフラとバックエンドを受け持つ
+
+- lambda_layers
+    - Lambda Layerのみinfrastructuresから切り離す
+    - レイヤーはデプロイの度に新しいバージョンとなるため、レイヤーや関数に変更がなくてもsam deployの度に変更リストに上がり、レイヤーを使用しているLambda関数す全てが更新され、デプロイ所要時間が膨大となる
+    ↓
+    - レイヤーのデプロイ時に最新バージョンのARNをCloudformationに出力し、infrastructuresではそのARNを指定することで、改修がなければ変更リストに入らないようにする
+
+- infrastructuresの場合の注意
+    - 初回は`ApiGatewayBackendBasePathMapping`はコメントアウトした上でデプロイし、コメントアウトを外して再度デプロイを行うこと
+        - API Gatewayが未作成の状態でマッピングを作成しようとして、エラーとなるため
+        - 明示的に順番を指定する手段があれば、この問題は解決できそう
+
 ```sh
+# infeastructures, lambda_layers共に実施
+
 # 開発環境
 bash deploy.sh dev
 
@@ -70,6 +89,8 @@ bash deploy.sh prod
 
 ## Lambda関数へテストイベントの登録
 ```sh
+# infeastructures
+
 # 開発環境
 bash set_lambda_test_events.sh dev
 # 本番環境
@@ -80,3 +101,24 @@ bash set_lambda_test_events.sh prod
 1. S3バケットを空にする
     - バケットは空にしてからでないと削除できないため
 2. CloudFormationスタックを削除
+
+## ローカルにてデータベース操作方法
+```sh
+# ローカルのsqliteへ接続
+$ bash database/handler.sh connect
+
+# ローカルのsqliteを初期化（全テーブルを再作成）
+$ bash database/handler.sh init
+
+# S3のsqliteファイルをローカルにダウンロード
+# 開発
+$ bash database/handler.sh download dev
+# 本番
+$ bash database/handler.sh download prod
+
+# ローカルのsqliteファイルをS3にアップロード
+# 開発
+$ bash database/handler.sh upload dev
+# 本番
+$ bash database/handler.sh upload prod
+```

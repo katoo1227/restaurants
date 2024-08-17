@@ -36,5 +36,5 @@ ApiGatewayBackendBasePathMapping:
             - "IsProd"
             - !Sub "restaurants-api.${Domain}"
             - !Sub "restaurants-api-dev.${Domain}"
-        RestApiId: !Ref "IdApiBackend"
+        RestApiId: !Ref "ApiGatewayBackend"
         Stage: "v1"

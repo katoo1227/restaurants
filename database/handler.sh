@@ -57,7 +57,7 @@ init_db() {
 # S3バケット名の取得
 get_s3_bucket_name() {
     env="$1"
-    outputs=$(sam list stack-outputs --stack-name "RestaurantsDeploy${env^}" --output json)
+    outputs=$(sam list stack-outputs --stack-name "RestaurantsInfrastructures${env^}" --output json)
     echo $outputs | jq -r --arg key "NameDatabaseBucket" '.[] | select(.OutputKey == $key) | .OutputValue'
 }
 

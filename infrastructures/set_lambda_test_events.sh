@@ -72,7 +72,7 @@ fi
 
 # スタックの出力を取得
 env_for_stack=$(echo "${env^}")
-stack_name="RestaurantsDeploy$env_for_stack"
+stack_name="RestaurantsInfrastructures$env_for_stack"
 outputs=$(sam list stack-outputs --stack-name $stack_name --output json)
 
 # LambdaLineNotifyのテストイベントの設定

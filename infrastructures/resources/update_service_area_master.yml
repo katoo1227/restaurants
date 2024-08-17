@@ -1,19 +1,21 @@
 # Lambda
-LambdaUpdateRestaurantsFromTmp:
+LambdaUpdateServiceAreaMaster:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/update_restaurants_from_tmp/"
+        CodeUri: "./lambda_functions/update_service_area_master/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsUpdateRestaurantsFromTmpProd"
-            - "RestaurantsUpdateRestaurantsFromTmpDev"
-        Role: !GetAtt "IamRoleUpdateRestaurantsFromTmp.Arn"
+            - "RestaurantsUpdateServiceAreaMasterProd"
+            - "RestaurantsUpdateServiceAreaMasterDev"
+        Role: !GetAtt "IamRoleUpdateServiceAreaMaster.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerHandlerS3Sqlite"
+            - !Ref "LambdaLayerHotpepperApiClient"
+            - !Ref "LambdaLayerSqliteClient"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                PARAMETER_STORE_NAME_HOTPEPPER_API_KEY: !Ref "ParameterStoreNameHotpepperApiKey"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
@@ -23,27 +25,27 @@ LambdaUpdateRestaurantsFromTmp:
         Timeout: 30
 
         Events:
-            EventBridgeScheduleLambdaUpdateRestaurantsFromTmp:
+            EventBridgeScheduleLambdaUpdateServiceAreaMaster:
                 Type: "ScheduleV2"
                 Properties:
-                    ScheduleExpression: cron(0 0 ? * SAT *)
+                    ScheduleExpression: cron(0 2 ? * SUN *)
                     ScheduleExpressionTimezone: "Asia/Tokyo"
                     State: ENABLED
                     GroupName: !Ref "EventBridgeScheduleGroup"
                     Name: !If
                         - "IsProd"
-                        - "UpdateRestaurantsFromTmpProd"
-                        - "UpdateRestaurantsFromTmpDev"
-                    RoleArn: !GetAtt "IamRoleInvokeUpdateRestaurantsFromTmp.Arn"
+                        - "UpdateServiceAreaMasterProd"
+                        - "UpdateServiceAreaMasterDev"
+                    RoleArn: !GetAtt "IamRoleInvokeUpdateServiceAreaMaster.Arn"
 
 # IAMロール
-IamRoleUpdateRestaurantsFromTmp:
+IamRoleUpdateServiceAreaMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsUpdateRestaurantsFromTmpProd"
-            - "RestaurantsUpdateRestaurantsFromTmpDev"
+            - "RestaurantsUpdateServiceAreaMasterProd"
+            - "RestaurantsUpdateServiceAreaMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -53,16 +55,21 @@ IamRoleUpdateRestaurantsFromTmp:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyUpdateRestaurantsFromTmp:
+IamPolicyUpdateServiceAreaMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsUpdateRestaurantsFromTmpProd"
-            - "RestaurantsUpdateRestaurantsFromTmpDev"
+            - "RestaurantsUpdateServiceAreaMasterProd"
+            - "RestaurantsUpdateServiceAreaMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameHotpepperApiKey}"
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
@@ -80,16 +87,16 @@ IamPolicyUpdateRestaurantsFromTmp:
                       - "s3:DeleteObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
         Roles:
-            - !Ref "IamRoleUpdateRestaurantsFromTmp"
+            - !Ref "IamRoleUpdateServiceAreaMaster"
 
-# IAMロール
-IamRoleInvokeUpdateRestaurantsFromTmp:
+# スケジュール実行IAMロール
+IamRoleInvokeUpdateServiceAreaMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateRestaurantsFromTmpProd"
-            - "RestaurantsInvokeUpdateRestaurantsFromTmpDev"
+            - "RestaurantsInvokeUpdateServiceAreaMasterProd"
+            - "RestaurantsInvokeUpdateServiceAreaMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -98,20 +105,20 @@ IamRoleInvokeUpdateRestaurantsFromTmp:
                       Service: "scheduler.amazonaws.com"
                   Action: "sts:AssumeRole"
 
-# IAMポリシー
-IamPolicyInvokeUpdateRestaurantsFromTmp:
+# スケジュール実行IAMポリシー
+IamPolicyInvokeUpdateServiceAreaMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateRestaurantsFromTmpProd"
-            - "RestaurantsInvokeUpdateRestaurantsFromTmpDev"
+            - "RestaurantsInvokeUpdateServiceAreaMasterProd"
+            - "RestaurantsInvokeUpdateServiceAreaMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaUpdateRestaurantsFromTmp.Arn"
+                  Resource: !GetAtt "LambdaUpdateServiceAreaMaster.Arn"
         Roles:
-            - !Ref "IamRoleInvokeUpdateRestaurantsFromTmp"
+            - !Ref "IamRoleInvokeUpdateServiceAreaMaster"

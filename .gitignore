@@ -1,6 +1,13 @@
+# 全テンプレ共通
 .aws-sam
-database/database.sqlite3
 deploy_dev.env
 deploy_prod.env
-template.yml
-lambda_layers/*/python
+
+# infrastructures用
+/infrastructures/template.yml
+
+# Lambda Layers用
+/lambda_layers/src/*/python
+
+# ローカルのデータベースファイル
+/database/database.sqlite3

@@ -1,51 +1,42 @@
 # Lambda
-LambdaUpdateMiddleAreaMaster:
+LambdaScrapingDetail:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/update_middle_area_master/"
+        CodeUri: "./lambda_functions/scraping_detail/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsUpdateMiddleAreaMasterProd"
-            - "RestaurantsUpdateMiddleAreaMasterDev"
-        Role: !GetAtt "IamRoleUpdateMiddleAreaMaster.Arn"
+            - "RestaurantsScrapingDetailProd"
+            - "RestaurantsScrapingDetailDev"
+        Role: !GetAtt "IamRoleScrapingDetail.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerExecHotpepperApi"
-            - !Ref "LambdaLayerHandlerS3Sqlite"
+            - !Ref "LambdaLayerSqliteClient"
+            - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerRequests"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                PARAMETER_STORE_NAME_HOTPEPPER_API_KEY: !Ref "ParameterStoreNameHotpepperApiKey"
+                ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
+                NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
+                NAME_BUCKET_IMAGES: !Ref "S3Images"
+                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
+                PARAMETER_STORE_NAME_GCP_API_KEY: !Ref "ParameterStoreNameGcpApiKey"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
-        Timeout: 30
-
-        Events:
-            EventBridgeScheduleLambdaUpdateMiddleAreaMaster:
-                Type: "ScheduleV2"
-                Properties:
-                    ScheduleExpression: cron(0 4 ? * SUN *)
-                    ScheduleExpressionTimezone: "Asia/Tokyo"
-                    State: ENABLED
-                    GroupName: !Ref "EventBridgeScheduleGroup"
-                    Name: !If
-                        - "IsProd"
-                        - "UpdateMiddleAreaMasterProd"
-                        - "UpdateMiddleAreaMasterDev"
-                    RoleArn: !GetAtt "IamRoleInvokeUpdateMiddleAreaMaster.Arn"
+        Timeout: 600
 
 # IAMロール
-IamRoleUpdateMiddleAreaMaster:
+IamRoleScrapingDetail:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsUpdateMiddleAreaMasterProd"
-            - "RestaurantsUpdateMiddleAreaMasterDev"
+            - "RestaurantsScrapingDetailProd"
+            - "RestaurantsScrapingDetailDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -55,26 +46,27 @@ IamRoleUpdateMiddleAreaMaster:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyUpdateMiddleAreaMaster:
+IamPolicyScrapingDetail:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsUpdateMiddleAreaMasterProd"
-            - "RestaurantsUpdateMiddleAreaMasterDev"
+            - "RestaurantsScrapingDetailProd"
+            - "RestaurantsScrapingDetailDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
-                      - "ssm:GetParameter"
-                  Resource:
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameHotpepperApiKey}"
-                - Effect: "Allow"
-                  Action:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
+                      - !GetAtt "LambdaHandlerSchedules.Arn"
+                - Effect: "Allow"
+                  Action:
+                      - "dynamodb:Query"
+                      - "dynamodb:DeleteItem"
+                  Resource: !GetAtt "DynamodbRestaurantsTasks.Arn"
                 - Effect: "Allow"
                   Action:
                       - "s3:GetObject"
@@ -86,17 +78,30 @@ IamPolicyUpdateMiddleAreaMaster:
                       - "s3:PutObject"
                       - "s3:DeleteObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
+                - Effect: "Allow"
+                  Action:
+                      - "s3:ListBucket"
+                  Resource: !Sub "arn:aws:s3:::${S3Images}"
+                - Effect: "Allow"
+                  Action:
+                      - "s3:PutObject"
+                      - "s3:DeleteObject"
+                  Resource: !Sub "arn:aws:s3:::${S3Images}/images/*"
+                - Effect: "Allow"
+                  Action:
+                      - "ssm:GetParameter"
+                  Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameGcpApiKey}"
         Roles:
-            - !Ref "IamRoleUpdateMiddleAreaMaster"
+            - !Ref "IamRoleScrapingDetail"
 
-# スケジュール実行IAMロール
-IamRoleInvokeUpdateMiddleAreaMaster:
+# IAMロール
+IamRoleInvokeScrapingDetail:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateMiddleAreaMasterProd"
-            - "RestaurantsInvokeUpdateMiddleAreaMasterDev"
+            - "RestaurantsInvokeScrapingDetailProd"
+            - "RestaurantsInvokeScrapingDetailDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -105,20 +110,20 @@ IamRoleInvokeUpdateMiddleAreaMaster:
                       Service: "scheduler.amazonaws.com"
                   Action: "sts:AssumeRole"
 
-# スケジュール実行IAMポリシー
-IamPolicyInvokeUpdateMiddleAreaMaster:
+# IAMポリシー
+IamPolicyInvokeScrapingDetail:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateMiddleAreaMasterProd"
-            - "RestaurantsInvokeUpdateMiddleAreaMasterDev"
+            - "RestaurantsInvokeScrapingDetailProd"
+            - "RestaurantsInvokeScrapingDetailDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaUpdateMiddleAreaMaster.Arn"
+                  Resource: !GetAtt "LambdaScrapingDetail.Arn"
         Roles:
-            - !Ref "IamRoleInvokeUpdateMiddleAreaMaster"
+            - !Ref "IamRoleInvokeScrapingDetail"

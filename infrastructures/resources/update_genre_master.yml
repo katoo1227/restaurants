@@ -1,17 +1,17 @@
 # Lambda
-LambdaUpdateServiceAreaMaster:
+LambdaUpdateGenreMaster:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/update_service_area_master/"
+        CodeUri: "./lambda_functions/update_genre_master/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsUpdateServiceAreaMasterProd"
-            - "RestaurantsUpdateServiceAreaMasterDev"
-        Role: !GetAtt "IamRoleUpdateServiceAreaMaster.Arn"
+            - "RestaurantsUpdateGenreMasterProd"
+            - "RestaurantsUpdateGenreMasterDev"
+        Role: !GetAtt "IamRoleUpdateGenreMaster.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerExecHotpepperApi"
-            - !Ref "LambdaLayerHandlerS3Sqlite"
+            - !Ref "LambdaLayerHotpepperApiClient"
+            - !Ref "LambdaLayerSqliteClient"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
@@ -25,27 +25,27 @@ LambdaUpdateServiceAreaMaster:
         Timeout: 30
 
         Events:
-            EventBridgeScheduleLambdaUpdateServiceAreaMaster:
+            EventBridgeScheduleLambdaUpdateGenreMaster:
                 Type: "ScheduleV2"
                 Properties:
-                    ScheduleExpression: cron(0 2 ? * SUN *)
+                    ScheduleExpression: cron(0 0 ? * SUN *)
                     ScheduleExpressionTimezone: "Asia/Tokyo"
                     State: ENABLED
                     GroupName: !Ref "EventBridgeScheduleGroup"
                     Name: !If
                         - "IsProd"
-                        - "UpdateServiceAreaMasterProd"
-                        - "UpdateServiceAreaMasterDev"
-                    RoleArn: !GetAtt "IamRoleInvokeUpdateServiceAreaMaster.Arn"
+                        - "UpdateGenreMasterProd"
+                        - "UpdateGenreMasterDev"
+                    RoleArn: !GetAtt "IamRoleInvokeUpdateGenreMaster.Arn"
 
 # IAMロール
-IamRoleUpdateServiceAreaMaster:
+IamRoleUpdateGenreMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsUpdateServiceAreaMasterProd"
-            - "RestaurantsUpdateServiceAreaMasterDev"
+            - "RestaurantsUpdateGenreMasterProd"
+            - "RestaurantsUpdateGenreMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -55,13 +55,13 @@ IamRoleUpdateServiceAreaMaster:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyUpdateServiceAreaMaster:
+IamPolicyUpdateGenreMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsUpdateServiceAreaMasterProd"
-            - "RestaurantsUpdateServiceAreaMasterDev"
+            - "RestaurantsUpdateGenreMasterProd"
+            - "RestaurantsUpdateGenreMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -87,16 +87,16 @@ IamPolicyUpdateServiceAreaMaster:
                       - "s3:DeleteObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
         Roles:
-            - !Ref "IamRoleUpdateServiceAreaMaster"
+            - !Ref "IamRoleUpdateGenreMaster"
 
 # スケジュール実行IAMロール
-IamRoleInvokeUpdateServiceAreaMaster:
+IamRoleInvokeUpdateGenreMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateServiceAreaMasterProd"
-            - "RestaurantsInvokeUpdateServiceAreaMasterDev"
+            - "RestaurantsInvokeUpdateGenreMasterProd"
+            - "RestaurantsInvokeUpdateGenreMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -106,19 +106,19 @@ IamRoleInvokeUpdateServiceAreaMaster:
                   Action: "sts:AssumeRole"
 
 # スケジュール実行IAMポリシー
-IamPolicyInvokeUpdateServiceAreaMaster:
+IamPolicyInvokeUpdateGenreMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeUpdateServiceAreaMasterProd"
-            - "RestaurantsInvokeUpdateServiceAreaMasterDev"
+            - "RestaurantsInvokeUpdateGenreMasterProd"
+            - "RestaurantsInvokeUpdateGenreMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaUpdateServiceAreaMaster.Arn"
+                  Resource: !GetAtt "LambdaUpdateGenreMaster.Arn"
         Roles:
-            - !Ref "IamRoleInvokeUpdateServiceAreaMaster"
+            - !Ref "IamRoleInvokeUpdateGenreMaster"

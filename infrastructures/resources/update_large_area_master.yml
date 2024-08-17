@@ -1,21 +1,21 @@
 # Lambda
-LambdaNotifyNewRestaurants:
+LambdaUpdateLargeAreaMaster:
     Type: "AWS::Serverless::Function"
     Properties:
-        CodeUri: "./lambda_functions/notify_new_restaurants/"
+        CodeUri: "./lambda_functions/update_large_area_master/"
         FunctionName: !If
             - "IsProd"
-            - "RestaurantsNotifyNewRestaurantsProd"
-            - "RestaurantsNotifyNewRestaurantsDev"
-        Role: !GetAtt "IamRoleNotifyNewRestaurants.Arn"
+            - "RestaurantsUpdateLargeAreaMasterProd"
+            - "RestaurantsUpdateLargeAreaMasterDev"
+        Role: !GetAtt "IamRoleUpdateLargeAreaMaster.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerHandlerS3Sqlite"
-            - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerHotpepperApiClient"
+            - !Ref "LambdaLayerSqliteClient"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
+                PARAMETER_STORE_NAME_HOTPEPPER_API_KEY: !Ref "ParameterStoreNameHotpepperApiKey"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
@@ -25,27 +25,27 @@ LambdaNotifyNewRestaurants:
         Timeout: 30
 
         Events:
-            EventBridgeScheduleLambdaNotifyNewRestaurants:
+            EventBridgeScheduleLambdaUpdateLargeAreaMaster:
                 Type: "ScheduleV2"
                 Properties:
-                    ScheduleExpression: cron(0 1 ? * SAT *)
+                    ScheduleExpression: cron(0 3 ? * SUN *)
                     ScheduleExpressionTimezone: "Asia/Tokyo"
                     State: ENABLED
                     GroupName: !Ref "EventBridgeScheduleGroup"
                     Name: !If
                         - "IsProd"
-                        - "NotifyNewRestaurantsProd"
-                        - "NotifyNewRestaurantsDev"
-                    RoleArn: !GetAtt "IamRoleInvokeNotifyNewRestaurants.Arn"
+                        - "UpdateLargeAreaMasterProd"
+                        - "UpdateLargeAreaMasterDev"
+                    RoleArn: !GetAtt "IamRoleInvokeUpdateLargeAreaMaster.Arn"
 
 # IAMロール
-IamRoleNotifyNewRestaurants:
+IamRoleUpdateLargeAreaMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsNotifyNewRestaurantsProd"
-            - "RestaurantsNotifyNewRestaurantsDev"
+            - "RestaurantsUpdateLargeAreaMasterProd"
+            - "RestaurantsUpdateLargeAreaMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -55,22 +55,26 @@ IamRoleNotifyNewRestaurants:
                   Action: "sts:AssumeRole"
 
 # IAMポリシー
-IamPolicyNotifyNewRestaurants:
+IamPolicyUpdateLargeAreaMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsNotifyNewRestaurantsProd"
-            - "RestaurantsNotifyNewRestaurantsDev"
+            - "RestaurantsUpdateLargeAreaMasterProd"
+            - "RestaurantsUpdateLargeAreaMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameHotpepperApiKey}"
+                - Effect: "Allow"
+                  Action:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
-                      - !GetAtt "LambdaLineNotify.Arn"
                 - Effect: "Allow"
                   Action:
                       - "s3:GetObject"
@@ -83,16 +87,16 @@ IamPolicyNotifyNewRestaurants:
                       - "s3:DeleteObject"
                   Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
         Roles:
-            - !Ref "IamRoleNotifyNewRestaurants"
+            - !Ref "IamRoleUpdateLargeAreaMaster"
 
-# IAMロール
-IamRoleInvokeNotifyNewRestaurants:
+# スケジュール実行IAMロール
+IamRoleInvokeUpdateLargeAreaMaster:
     Type: "AWS::IAM::Role"
     Properties:
         RoleName: !If
             - "IsProd"
-            - "RestaurantsInvokeNotifyNewRestaurantsProd"
-            - "RestaurantsInvokeNotifyNewRestaurantsDev"
+            - "RestaurantsInvokeUpdateLargeAreaMasterProd"
+            - "RestaurantsInvokeUpdateLargeAreaMasterDev"
         AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -101,20 +105,20 @@ IamRoleInvokeNotifyNewRestaurants:
                       Service: "scheduler.amazonaws.com"
                   Action: "sts:AssumeRole"
 
-# IAMポリシー
-IamPolicyInvokeNotifyNewRestaurants:
+# スケジュール実行IAMポリシー
+IamPolicyInvokeUpdateLargeAreaMaster:
     Type: "AWS::IAM::Policy"
     Properties:
         PolicyName: !If
             - "IsProd"
-            - "RestaurantsInvokeNotifyNewRestaurantsProd"
-            - "RestaurantsInvokeNotifyNewRestaurantsDev"
+            - "RestaurantsInvokeUpdateLargeAreaMasterProd"
+            - "RestaurantsInvokeUpdateLargeAreaMasterDev"
         PolicyDocument:
             Version: "2012-10-17"
             Statement:
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
-                  Resource: !GetAtt "LambdaNotifyNewRestaurants.Arn"
+                  Resource: !GetAtt "LambdaUpdateLargeAreaMaster.Arn"
         Roles:
-            - !Ref "IamRoleInvokeNotifyNewRestaurants"
+            - !Ref "IamRoleInvokeUpdateLargeAreaMaster"
