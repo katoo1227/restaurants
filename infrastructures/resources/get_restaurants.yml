@@ -17,7 +17,7 @@ LambdaGetRestaurants:
                 FRONTEND_DOMAIN: !If
                     - "IsProd"
                     - !Sub "https://${Route53Frontend}"
-                    - !Sub "https://${Route53Frontend},https://localhost"
+                    - !Sub "https://${Route53Frontend},${LocalFrontendReferrers}"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"

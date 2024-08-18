@@ -84,9 +84,6 @@ set_test_events "LambdaErrorCommon" "ArnLambdaErrorCommon"
 # LambdaHandlerSchedulesのテストイベントの設定
 set_test_events "LambdaHandlerSchedules" "ArnLambdaHandlerSchedules"
 
-# LambdaRegisterTasksSmallAreasのテストイベントの設定
-set_test_events "LambdaRegisterTasksSmallAreas" "ArnLambdaRegisterTasksSmallAreas"
-
 # LambdaRegisterTasksPagesのテストイベントの設定
 set_test_events "LambdaRegisterTasksPages" "ArnLambdaRegisterTasksPages"
 
@@ -102,8 +99,8 @@ set_test_events "LambdaUpdateRestaurantsFromTmp" "ArnLambdaUpdateRestaurantsFrom
 # LambdaNotifyNewRestaurantsのテストイベントの設定
 set_test_events "LambdaNotifyNewRestaurants" "ArnNotifyNewRestaurants"
 
-# # LambdaGetRestaurantsのテストイベントの設定
-# set_test_events "LambdaGetRestaurants" "ArnGetRestaurants"
+# LambdaGetRestaurantsのテストイベントの設定
+set_test_events "LambdaGetRestaurants" "ArnGetRestaurants"
 
 # LambdaUpdateGenreMasterのテストイベントの設定
 set_test_events "LambdaUpdateGenreMaster" "ArnLambdaUpdateGenreMaster"

@@ -102,7 +102,8 @@ build_deploy() {
         S3BucketPrefix="$S3_BUCKET_PREFIX" \
         LambdaLayerHotpepperApiClient=${outputs["ArnHotpepperApiClient"]} \
         LambdaLayerSqliteClient=${outputs["ArnSqliteClient"]} \
-        LambdaLayerDynamodbTypes=${outputs["ArnDynamodbTypes"]}
+        LambdaLayerDynamodbTypes=${outputs["ArnDynamodbTypes"]} \
+        LocalFrontendReferrers=$LOCAL_FRONTEND_REFERRERS
 }
 
 # デプロイ処理

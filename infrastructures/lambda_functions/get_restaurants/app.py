@@ -5,15 +5,19 @@ import boto3
 from pydantic import BaseModel, ValidationError
 from handler_s3_sqlite import HandlerS3Sqlte
 
+
 class EventParams(BaseModel):
     """
     イベントパラメータ
     """
 
+    lat: float
+    lng: float
     lat_min: float
     lat_max: float
     lng_min: float
     lng_max: float
+
 
 class Restaurant(BaseModel):
     """
@@ -29,9 +33,7 @@ def lambda_handler(event, context):
 
     response = {
         "statusCode": 200,
-        "headers": {
-            "Access-Control-Allow-Origin": "null"
-        },
+        "headers": {"Access-Control-Allow-Origin": "null"},
         "body": "NG",
     }
 
@@ -58,7 +60,8 @@ def lambda_handler(event, context):
 
     return response
 
-def set_origin(evt: dict) -> str|None:
+
+def set_origin(evt: dict) -> str | None:
     """
     オリジンの取得
 
@@ -78,11 +81,13 @@ def set_origin(evt: dict) -> str|None:
     if "headers" not in evt:
         return None
 
-    origin = evt['headers'].get('origin', '')
-    if origin in allowed_origins:
-        return origin
-    else:
+    # 許可されていないオリジンであれば終了
+    origin = evt["headers"].get("origin", "")
+    if origin not in allowed_origins:
         return None
+
+    return origin
+
 
 def get_params(evt: dict) -> EventParams:
     """
@@ -99,14 +104,11 @@ def get_params(evt: dict) -> EventParams:
     """
     # bodyがなければエラー
     if "body" not in evt:
-        raise Exception(f"イベントパラメータにbodyがない。パラメータ：{json.dumps(evt)}")
+        raise Exception(
+            f"イベントパラメータにbodyがない。パラメータ：{json.dumps(evt)}"
+        )
 
     body = json.loads(evt["body"])
-
-    # middle_area_codeのチェック
-    # TODO EventParams内でチェックするよう修正
-    if not re.match(r"Y\d{3}", body["middle_area_code"]):
-        raise Exception(f"middle_area_codeが{str(r"Y\d{3}")}にマッチしない。{body["middle_area_code"]}")
 
     # 最大と最小が逆であれば正す
     if body["lat_max"] < body["lat_min"]:
@@ -151,20 +153,34 @@ SELECT
     latitude,
     longitude,
     genre_code,
-    parking
+    parking,
+    is_thumbnail,
+    (
+        6371 * acos(
+            cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?))
+            + sin(radians(?)) * sin(radians(latitude))
+        )
+    ) AS distance
 FROM
     restaurants
 WHERE
     latitude BETWEEN ? AND ?
-    AND longitude BETWEEN ? AND ?;
+    AND longitude BETWEEN ? AND ?
+LIMIT 300;
 """
-    params = [evt.lat_min, evt.lat_max, evt.lng_min, evt.lng_max]
+    params = [
+        evt.lat,
+        evt.lng,
+        evt.lng,
+        evt.lat_min,
+        evt.lat_max,
+        evt.lng_min,
+        evt.lng_max,
+    ]
     res = hss.exec_query(sql, params)
 
     # ジャンル名とコードのマッピング
-    genre_codes = list(
-        set([r[4] for r in res])
-    )
+    genre_codes = list(set([r[4] for r in res]))
     sql = f"""
 SELECT
     code,
@@ -175,10 +191,7 @@ WHERE
     code IN ({', '.join(['?'] * len(genre_codes))});
 """
     genre_res = hss.exec_query(sql, genre_codes)
-    genre_name_codes = {
-        r[0]: r[1]
-        for r in genre_res if r != ""
-    }
+    genre_name_codes = {r[0]: r[1] for r in genre_res if r != ""}
 
     return [
         {
@@ -186,7 +199,9 @@ WHERE
             "name": r[1],
             "lat": r[2],
             "lng": r[3],
-            "genre_code": genre_name_codes[r[4]]
+            "genre_name": genre_name_codes[r[4]],
+            "parking": r[5],
+            "is_thumbnail": r[6]
         }
         for r in res
     ]

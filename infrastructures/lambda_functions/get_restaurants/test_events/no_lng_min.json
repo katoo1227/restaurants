@@ -1,3 +1,4 @@
 {
-    "body": "{\"middle_area_code\": \"Y883\", \"lat_min\": 41.78994, \"lat_max\": 41.795061, \"lng_max\": 140.7716745}"
+    "headers": {"origin": "https://localhost"},
+    "body": "{\"lat\": 41.750, \"lng\": 140.705, \"lat_min\": 41.748, \"lat_max\": 41.795061, \"lng_max\": 140.7316745}"
 }
