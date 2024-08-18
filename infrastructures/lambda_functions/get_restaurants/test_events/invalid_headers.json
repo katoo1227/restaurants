@@ -1,4 +1,4 @@
 {
-    "headers": {"origin": "https://localhost"},
+    "headers": {"origin": "aaa"},
     "body": "{\"lat\": 41.750, \"lng\": 140.705, \"lat_min\": 41.748, \"lat_max\": 41.795061, \"lng_min\": 140.7040298, \"lng_max\": 140.7316745}"
 }
