@@ -90,6 +90,10 @@ Parameters:
     LocalFrontendReferrers:
         Type: "String"
 
+    # 飲食店画像アクセス許可リファラー
+    AllowReferersRestaurantImages:
+        Type: "String"
+
 Conditions:
     # 本番環境かどうか
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
@@ -103,6 +107,8 @@ Resources:
 
     # Cloudfront - フロントエンド
     - $file: resources/cloudfront/frontend.yml
+    # Cloudfront - 飲食店画像
+    - $file: resources/cloudfront/images.yml
 
     # S3 - データベース
     - $file: resources/s3/database.yml

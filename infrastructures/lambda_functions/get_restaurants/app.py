@@ -166,7 +166,7 @@ FROM
 WHERE
     latitude BETWEEN ? AND ?
     AND longitude BETWEEN ? AND ?
-LIMIT 300;
+LIMIT 2000;
 """
     params = [
         evt.lat,
