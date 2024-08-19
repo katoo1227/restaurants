@@ -1,3 +1,4 @@
+# バケット
 S3Images:
     Type: "AWS::S3::Bucket"
     Properties:
@@ -5,3 +6,22 @@ S3Images:
             - "IsProd"
             - !Sub "${S3BucketPrefix}-restaurants-images-prod"
             - !Sub "${S3BucketPrefix}-restaurants-images-dev"
+
+# バケットポリシー
+S3ImagesBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+        Bucket: !Ref "S3Images"
+        PolicyDocument:
+            Version: "2008-10-17"
+            Id: "PolicyForCloudFrontPrivateContent"
+            Statement:
+                - Sid: "AllowCloudFrontServicePrincipal"
+                  Effect: "Allow"
+                  Principal:
+                      Service: "cloudfront.amazonaws.com"
+                  Action: "s3:GetObject"
+                  Resource: !Sub "${S3Images.Arn}/*"
+                  Condition:
+                      StringEquals:
+                          AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudfrontImagesDistribution}"

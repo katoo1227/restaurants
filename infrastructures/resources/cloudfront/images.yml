@@ -1,45 +1,54 @@
 # OAC
-CloudfrontOriginAccessControlFrontend:
+CloudfrontOriginAccessControlImages:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
         OriginAccessControlConfig:
             Name: !If
                 - "IsProd"
-                - "RestaurantsFrontendProd"
-                - "RestaurantsFrontendDev"
+                - "RestaurantsImagesProd"
+                - "RestaurantsImagesDev"
             OriginAccessControlOriginType: "s3"
             SigningBehavior: "always"
             SigningProtocol: "sigv4"
 
-# Basic認証用関数
-CloudfrontFunctionFrontendBasicAuthorization:
+# リファラー制限関数
+CloudfrontFunctionImagesReferer:
     Type : "AWS::CloudFront::Function"
     Properties:
         Name: !If
             - "IsProd"
-            - "RestaurantsFrontendProd"
-            - "RestaurantsFrontendDev"
+            - "RestaurantsImagesProd"
+            - "RestaurantsImagesDev"
         AutoPublish: true
         FunctionCode: !Sub |
             function handler(event) {
+                const errorResponse = {
+                    statusCode: 403,
+                    statusDescription: 'Forbidden',
+                    headers: {
+                        'content-type': [{ key: 'Content-Type', value: 'text/plain' }],
+                    },
+                    body: 'Access denied',
+                }
+                // Define allowed referrers
+                const allowReferers = [
+                    'https://${Route53Frontend}/',
+                    // 'https://localhost/',
+                    // 'https://restaurants-dev.katoo1227.net/'
+                ];
+
                 const request = event.request;
+
+                // リファラーがなければエラー
                 const headers = request.headers;
+                if (!headers || !headers.hasOwnProperty('referer')) {
+                    return errorResponse;
+                }
 
-                const authString = "Basic ${FrontendBasicAuthorization}";
-
-                if (
-                    typeof headers.authorization === "undefined" ||
-                    headers.authorization.value !== authString
-                ) {
-                    return {
-                        statusCode: 401,
-                        statusDescription: "Unauthorized",
-                        headers: {
-                            "www-authenticate": {
-                                value: "Basic"
-                            },
-                        },
-                    };
+                // リファラーが不正であればエラー
+                const referer = request.headers['referer']['value'];
+                if (!allowReferers.includes(referer)) {
+                        return errorResponse
                 }
 
                 return request;
@@ -53,15 +62,15 @@ CloudfrontFunctionFrontendBasicAuthorization:
 
 
 # ディストリビューション
-CloudfrontFrontendDistribution:
+CloudfrontImagesDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
         DistributionConfig:
             Aliases:
                 - !If
                     - "IsProd"
-                    - !Sub "restaurants.${Domain}"
-                    - !Sub "restaurants-dev.${Domain}"
+                    - !Sub "restaurants-images.${Domain}"
+                    - !Sub "restaurants-images-dev.${Domain}"
             DefaultCacheBehavior:
                 AllowedMethods:
                     - "GET"
@@ -73,16 +82,16 @@ CloudfrontFrontendDistribution:
                 ViewerProtocolPolicy: "https-only"
                 FunctionAssociations:
                     - EventType: "viewer-request"
-                      FunctionARN: !GetAtt "CloudfrontFunctionFrontendBasicAuthorization.FunctionMetadata.FunctionARN"
+                      FunctionARN: !GetAtt "CloudfrontFunctionImagesReferer.FunctionMetadata.FunctionARN"
             DefaultRootObject: "index.html"
             Enabled: true
             HttpVersion: "http2and3"
             IPV6Enabled: true
             Origins:
                 - Id: "S3Origin"
-                  DomainName: !Sub "${S3Frontend}.s3.${AWS::Region}.amazonaws.com"
+                  DomainName: !Sub "${S3Images}.s3.${AWS::Region}.amazonaws.com"
                   S3OriginConfig: {}
-                  OriginAccessControlId: !Ref "CloudfrontOriginAccessControlFrontend"
+                  OriginAccessControlId: !Ref "CloudfrontOriginAccessControlImages"
             ViewerCertificate:
                 # バージニア北部のSSL証明書
                 AcmCertificateArn: !Ref "ArnAcmSslCertficateUsEast"
