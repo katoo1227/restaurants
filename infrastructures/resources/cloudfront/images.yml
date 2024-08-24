@@ -30,11 +30,10 @@ CloudfrontFunctionImagesReferer:
                     },
                     body: 'Access denied',
                 }
-                // Define allowed referrers
+
+                // 許可されたリファラー
                 const allowReferers = [
-                    'https://${Route53Frontend}/',
-                    // 'https://localhost/',
-                    // 'https://restaurants-dev.katoo1227.net/'
+                    {{images_access_referers}}
                 ];
 
                 const request = event.request;
@@ -48,7 +47,7 @@ CloudfrontFunctionImagesReferer:
                 // リファラーが不正であればエラー
                 const referer = request.headers['referer']['value'];
                 if (!allowReferers.includes(referer)) {
-                        return errorResponse
+                    return errorResponse
                 }
 
                 return request;

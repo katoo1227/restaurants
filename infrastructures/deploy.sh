@@ -76,6 +76,24 @@ get_basic_authorization() {
         --output text
 }
 
+# Cloudfront画像リファラー制限文字列の置き換え
+replace_images_referers() {
+
+    # リファラー置き換え文字列
+    str=\''https://${Route53Frontend}'\'
+    echo $str
+    if [ $1 == "dev" ]; then
+        # 開発環境の場合はローカル環境のリファラーも追加
+        IFS=',' read -r -a urls <<< "$LOCAL_FRONTEND_REFERERS"
+        for url in "${urls[@]}"; do
+            str+=", '$url'"
+        done
+    fi
+
+    # テンプレートファイルに対して置換処理
+    sed -i "s|{{images_access_referers}}|$str|" "$2"
+}
+
 # ビルド・デプロイ
 build_deploy() {
     env=$1
@@ -103,7 +121,7 @@ build_deploy() {
         LambdaLayerHotpepperApiClient=${outputs["ArnHotpepperApiClient"]} \
         LambdaLayerSqliteClient=${outputs["ArnSqliteClient"]} \
         LambdaLayerDynamodbTypes=${outputs["ArnDynamodbTypes"]} \
-        LocalFrontendReferrers=$LOCAL_FRONTEND_REFERRERS
+        LocalFrontendReferers=$LOCAL_FRONTEND_REFERERS
 }
 
 # デプロイ処理
@@ -116,6 +134,9 @@ deploy() {
 
     # Lambdaレイヤーのデプロイ出力を定数にセット
     outputs=$(get_lambda_layers_deployment_outputs $env)
+
+    # Cloudfront画像リファラー制限文字列の置き換え
+    replace_images_referers "$env" "$yml_path"
 
     # SAM ビルド・デプロイ
     build_deploy "$env" "$outputs"
