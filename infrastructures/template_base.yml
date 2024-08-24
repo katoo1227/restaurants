@@ -87,11 +87,7 @@ Parameters:
         Default: "database.sqlite3.lock"
 
     # ローカル環境のフロントエンドのリファラー（本番では不使用）
-    LocalFrontendReferrers:
-        Type: "String"
-
-    # 飲食店画像アクセス許可リファラー
-    AllowReferersRestaurantImages:
+    LocalFrontendReferers:
         Type: "String"
 
 Conditions:
