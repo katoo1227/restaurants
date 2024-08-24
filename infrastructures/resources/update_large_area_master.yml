@@ -28,7 +28,7 @@ LambdaUpdateLargeAreaMaster:
             EventBridgeScheduleLambdaUpdateLargeAreaMaster:
                 Type: "ScheduleV2"
                 Properties:
-                    ScheduleExpression: cron(0 3 ? * SUN *)
+                    ScheduleExpression: cron(3 0 ? * SUN *)
                     ScheduleExpressionTimezone: "Asia/Tokyo"
                     State: ENABLED
                     GroupName: !Ref "EventBridgeScheduleGroup"
