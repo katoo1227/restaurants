@@ -14,10 +14,7 @@ LambdaGetRestaurants:
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
-                FRONTEND_DOMAIN: !If
-                    - "IsProd"
-                    - !Sub "https://${Route53Frontend}"
-                    - !Sub "https://${Route53Frontend},${LocalFrontendReferers}"
+                FRONTEND_DOMAIN: "{{replace_frontend_domains}}"
                 NAME_BUCKET_DATABASE: !Ref "S3Database"
                 NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
                 NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"

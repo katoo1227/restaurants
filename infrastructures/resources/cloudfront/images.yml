@@ -33,7 +33,7 @@ CloudfrontFunctionImagesReferer:
 
                 // 許可されたリファラー
                 const allowReferers = [
-                    {{images_access_referers}}
+                    {{replace_images_access_referers}}
                 ];
 
                 const request = event.request;
