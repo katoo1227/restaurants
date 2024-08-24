@@ -76,22 +76,45 @@ get_basic_authorization() {
         --output text
 }
 
+# テンプレート内の置換
+replace_template() {
+    # Cloudfront画像リファラー制限文字列
+    replace_images_referers "$1" "$2"
+
+    # フロントエンドのドメイン
+    replace_frontend_domains "$1" "$2"
+
+}
+
 # Cloudfront画像リファラー制限文字列の置き換え
 replace_images_referers() {
+    # 置き換え文字列
+    str=\''https://${Route53Frontend}/'\'
 
-    # リファラー置き換え文字列
-    str=\''https://${Route53Frontend}'\'
-    echo $str
+    # 開発環境の場合はローカル環境のリファラーも追加
     if [ $1 == "dev" ]; then
-        # 開発環境の場合はローカル環境のリファラーも追加
         IFS=',' read -r -a urls <<< "$LOCAL_FRONTEND_REFERERS"
         for url in "${urls[@]}"; do
-            str+=", '$url'"
+            str+=", '$url/'"
         done
     fi
 
     # テンプレートファイルに対して置換処理
-    sed -i "s|{{images_access_referers}}|$str|" "$2"
+    sed -i "s|{{replace_images_access_referers}}|$str|" "$2"
+}
+
+# フロントエンドのドメイン
+replace_frontend_domains() {
+    # 置き換え文字列
+    str='https://${Route53Frontend}'
+
+    # 開発環境の場合はローカル環境のリファラーも追加
+    if [ $1 == "dev" ]; then
+        str+=",$LOCAL_FRONTEND_REFERERS"
+    fi
+
+    # テンプレートファイルに対して置換処理
+    sed -i "s|{{replace_frontend_domains}}|$str|" "$2"
 }
 
 # ビルド・デプロイ
@@ -120,8 +143,7 @@ build_deploy() {
         S3BucketPrefix="$S3_BUCKET_PREFIX" \
         LambdaLayerHotpepperApiClient=${outputs["ArnHotpepperApiClient"]} \
         LambdaLayerSqliteClient=${outputs["ArnSqliteClient"]} \
-        LambdaLayerDynamodbTypes=${outputs["ArnDynamodbTypes"]} \
-        LocalFrontendReferers=$LOCAL_FRONTEND_REFERERS
+        LambdaLayerDynamodbTypes=${outputs["ArnDynamodbTypes"]}
 }
 
 # デプロイ処理
@@ -135,8 +157,8 @@ deploy() {
     # Lambdaレイヤーのデプロイ出力を定数にセット
     outputs=$(get_lambda_layers_deployment_outputs $env)
 
-    # Cloudfront画像リファラー制限文字列の置き換え
-    replace_images_referers "$env" "$yml_path"
+    # テンプレート内の置換
+    replace_template "$env" "$yml_path"
 
     # SAM ビルド・デプロイ
     build_deploy "$env" "$outputs"

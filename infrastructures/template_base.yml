@@ -86,10 +86,6 @@ Parameters:
         Type: "String"
         Default: "database.sqlite3.lock"
 
-    # ローカル環境のフロントエンドのリファラー（本番では不使用）
-    LocalFrontendReferers:
-        Type: "String"
-
 Conditions:
     # 本番環境かどうか
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
