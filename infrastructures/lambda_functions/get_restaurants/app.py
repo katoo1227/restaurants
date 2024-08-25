@@ -153,7 +153,7 @@ SELECT
     latitude,
     longitude,
     genre_code,
-    parking,
+    COALESCE(NULLIF(parking, ''), '未設定'),
     is_thumbnail,
     (
         6371 * acos(
