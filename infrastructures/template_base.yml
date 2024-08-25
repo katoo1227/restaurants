@@ -110,7 +110,7 @@ Resources:
     - $file: resources/s3/frontend.yml
 
     # DynamoDB
-    - $file: resources/dynamodb/restaurants_tasks.yml
+    - $file: resources/dynamodb/tasks.yml
 
     # Route53 - バックエンド
     - $file: resources/route53/backend.yml
