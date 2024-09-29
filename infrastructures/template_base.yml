@@ -47,6 +47,10 @@ Parameters:
     ParameterStoreNameGcpApiKey:
         Type: "String"
 
+    # SSMパラメータストア名 - Database APIキー
+    ParameterStoreNameDatabaseApiKey:
+        Type: "String"
+
     # Lambdaレイヤー - Requests
     LambdaLayerRequests:
         Type: "String"
@@ -91,6 +95,9 @@ Conditions:
     IsProd: !Equals [!Ref "EnvironmentType", "prod"]
 
 Resources:
+    # さくらサーバー連携用ユーザー
+    - $file: resources/iam/sakura_database_api.yml
+
     # CloudWatchロググループ
     - $file: resources/cloudwatch/log_group.yml
 

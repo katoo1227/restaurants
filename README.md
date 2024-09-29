@@ -36,8 +36,8 @@ https://console.cloud.google.com/?hl=ja
 | ④ | /restaurants/api_key/hotpepper | SecureString | ホットペッパーAPIキー |
 | ⑤ | /google/geocoding/prod/key | SecureString | GCP APIキー（本番用） |
 | ⑥ | /google/geocoding/dev/key | SecureString | GCP APIキー（開発用） |
+| ⑦ | /sakura/restaurants/database_api_key | SecureString | さくらサーバー連携用APIキー |
 
-※パラメータ名は好みで変えてください
 ※CloudFormationで`SecureStringのパラメータは作成できない`ため、手動で登録
 
 ### その他（割愛）
@@ -96,6 +96,10 @@ bash set_lambda_test_events.sh dev
 # 本番環境
 bash set_lambda_test_events.sh prod
 ```
+
+## さくらサーバー連携用APIユーザーのアクセスキーとシークレットを作成
+- SAMではできないため、マネコンで手動で実施
+  - APIユーザーはマネコンのアクセスを無効化しているので、別のユーザーで実施
 
 ## リソースを全て削除する場合
 1. S3バケットを空にする
