@@ -118,11 +118,6 @@ class DbClient:
         if r.status_code == HTTPStatus.OK:
             return
 
-        # 必要なキーがない場合はエラー
-        res_json = r.json()
-        for key in ["result", "data"]:
-            if key not in res_json:
-                raise Exception(f"返り値に{key}がありません。{json.dumps(r)}")
-
         # ステータスコードが失敗
-        raise Exception(f"DB操作に失敗しました。{json.dumps(r)}")
+        data = r.__dict__["_content"].decode("utf-8")
+        raise Exception(f"DB操作に失敗しました。{data}")

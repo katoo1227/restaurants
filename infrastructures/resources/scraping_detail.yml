@@ -10,19 +10,17 @@ LambdaScrapingDetail:
         Role: !GetAtt "IamRoleScrapingDetail.Arn"
         Runtime: "python3.12"
         Layers:
-            - !Ref "LambdaLayerSqliteClient"
-            - !Ref "LambdaLayerDynamodbTypes"
+            - !Ref "LambdaLayerDbClient"
             - !Ref "LambdaLayerRequests"
         Environment:
             Variables:
+                ENV: !Ref "EnvironmentType"
+                SAKURA_DATABASE_API_KEY_PATH: !Ref "ParameterStoreNameSakuraDatabaseApiKey"
+                SAKURA_DATABASE_API_URL: !Ref "SakuraDatabaseApiUrl"
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
                 ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
                 NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
-                NAME_BUCKET_DATABASE: !Ref "S3Database"
-                NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
-                NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
                 NAME_BUCKET_IMAGES: !Ref "S3Images"
-                NAME_DYNAMODB_TABLE_TASKS: !Ref "DynamodbRestaurantsTasks"
                 PARAMETER_STORE_NAME_GCP_API_KEY: !Ref "ParameterStoreNameGcpApiKey"
         Handler: "app.lambda_handler"
         Architectures:
@@ -58,26 +56,16 @@ IamPolicyScrapingDetail:
             Statement:
                 - Effect: "Allow"
                   Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameSakuraDatabaseApiKey}"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameGcpApiKey}"
+                - Effect: "Allow"
+                  Action:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
                       - !GetAtt "LambdaHandlerSchedules.Arn"
-                - Effect: "Allow"
-                  Action:
-                      - "dynamodb:Query"
-                      - "dynamodb:DeleteItem"
-                  Resource: !GetAtt "DynamodbRestaurantsTasks.Arn"
-                - Effect: "Allow"
-                  Action:
-                      - "s3:GetObject"
-                      - "s3:PutObject"
-                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbFileName}"
-                - Effect: "Allow"
-                  Action:
-                      - "s3:GetObject"
-                      - "s3:PutObject"
-                      - "s3:DeleteObject"
-                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
                 - Effect: "Allow"
                   Action:
                       - "s3:ListBucket"
@@ -87,10 +75,6 @@ IamPolicyScrapingDetail:
                       - "s3:PutObject"
                       - "s3:DeleteObject"
                   Resource: !Sub "arn:aws:s3:::${S3Images}/images/*"
-                - Effect: "Allow"
-                  Action:
-                      - "ssm:GetParameter"
-                  Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameGcpApiKey}"
         Roles:
             - !Ref "IamRoleScrapingDetail"
 

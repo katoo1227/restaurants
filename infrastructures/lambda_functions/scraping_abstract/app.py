@@ -5,9 +5,8 @@ import requests
 import re
 import time
 from bs4 import BeautifulSoup
-import dynamodb_types
+from db_client import DbClient
 from pydantic import BaseModel
-from handler_s3_sqlite import HandlerS3Sqlte
 
 
 class Task(BaseModel):
@@ -25,14 +24,14 @@ class Abstract(BaseModel):
     """
 
     id: str
-    small_area_name: str
+    name: str
     thumbnail_url: str | None
 
-
-HSS = HandlerS3Sqlte(
-    os.environ["NAME_BUCKET_DATABASE"],
-    os.environ["NAME_FILE_DATABASE"],
-    os.environ["NAME_LOCK_FILE_DATABASE"],
+# DBクライアント
+DB_CLIENT = DbClient(
+    os.environ["ENV"],
+    os.environ["SAKURA_DATABASE_API_KEY_PATH"],
+    os.environ["SAKURA_DATABASE_API_URL"],
 )
 
 
@@ -57,11 +56,8 @@ def lambda_handler(event, context):
         if len(param_arr) != 2:
             raise Exception(f"paramが不正です。{task.param}")
 
-        # 必要なエリアコード一覧を取得
-        areas = get_area_codes(param_arr[0])
-
         # 概要情報の取得
-        abstracts = get_abstract_info(areas[0], param_arr[0], int(param_arr[1]), areas[1])
+        abstracts = get_abstract_info(param_arr[0], int(param_arr[1]))
 
         # サムネ画像をS3へ保存
         put_thumbnails(abstracts)
@@ -97,20 +93,30 @@ def get_task() -> Task:
     -------
     Task
     """
-    res = boto3.client("dynamodb").query(
-        TableName=os.environ["NAME_DYNAMODB_TABLE_TASKS"],
-        KeyConditionExpression="kind = :kind",
-        ExpressionAttributeValues={
-            ":kind": dynamodb_types.serialize(os.environ["NAME_TASK_SCRAPING_ABSTRACT"])
-        },
-        Limit=1,
-    )
+    # SQL
+    sql = f"""
+SELECT
+    kind,
+    param
+FROM
+    update_tasks
+WHERE
+    kind = ?
+ORDER BY
+    created_at ASC
+LIMIT
+    1;
+"""
 
-    # なければ空オブジェクトで返却
-    if len(res["Items"]) == 0:
+    # パラメータ
+    params = ["ScrapingAbstract"]
+    res = DB_CLIENT.select(sql, params)
+
+    # 無ければ空オブジェクトで返却
+    if len(res["data"]) == 0:
         return {}
 
-    return Task(**dynamodb_types.deserialize_dict(res["Items"][0]))
+    return Task(**res["data"][0])
 
 
 def delete_schedule() -> None:
@@ -125,47 +131,7 @@ def delete_schedule() -> None:
     )
 
 
-# エリア一覧を取得
-def get_area_codes(middle_area_code: str) -> tuple:
-    """
-    必要なエリア一覧を取得
-
-    Parameters
-    ----------
-    small_area_code: str
-        中エリアコード
-
-    Returns
-    -------
-    tuple
-        str
-            サービスエリアコード
-        list[str]
-            エリアリスト
-    """
-    sql = """
-SELECT
-    service.code,
-    small.code
-FROM
-    small_area_master small
-    INNER JOIN middle_area_master middle ON small.middle_area_code = middle.code
-    INNER JOIN large_area_master large ON middle.large_area_code = large.code
-    INNER JOIN service_area_master service ON large.service_area_code = service.code
-WHERE
-    middle.code = ?;
-"""
-
-    res = HSS.exec_query(sql, [middle_area_code])
-    return res[0][0], [r[1] for r in res]
-
-
-def get_abstract_info(
-    service_area_code: str,
-    middle_area_code: str,
-    page_num: int,
-    small_area_codes: list[str]
-) -> list[Abstract]:
+def get_abstract_info(service_area_code: str, page_num: int) -> list[Abstract]:
     """
     概要情報を取得
 
@@ -173,12 +139,8 @@ def get_abstract_info(
     ----------
     serviec_area_code: str
         サービスエリアコード
-    middle_area_code: str
-        中エリアコード
     page_num: int
         ページ数
-    small_area_codes: list[str]
-        小エリアコードリスト
 
     Returns
     -------
@@ -186,14 +148,7 @@ def get_abstract_info(
     """
 
     # URL
-    url_arr = [
-        "https://www.hotpepper.jp",
-        service_area_code,
-        middle_area_code,
-        "_".join(small_area_codes),
-        f"bgn{page_num}"
-    ]
-    url = "/".join(url_arr)
+    url = f"https://www.hotpepper.jp/{service_area_code}/lst/bgn{page_num}/"
 
     # HTML解析
     html = requests.get(url)
@@ -221,20 +176,14 @@ def get_abstract_info(
             raise Exception(f"飲食店IDの取得に失敗しました。{str(link)}")
         id = match.group(1)
 
-        # 小エリア名
-        genre_name = r.select_one(".parentGenreName")
-        if genre_name is None:
-            raise Exception(f"「.parentGenreName」が存在しません。{url}")
-        genre_name_arr = genre_name.text.split("｜")
-        if len(genre_name_arr) != 2:
-            raise Exception(f"小エリアの値を取得できません。{url}")
-        small_area_name = genre_name_arr[1]
+        # 飲食店名
+        name = link.text.strip()
 
         # 結果配列に格納
         results.append(
             Abstract(
                 id=id,
-                small_area_name=small_area_name,
+                name=name,
                 thumbnail_url=thumbnail_url,
             )
         )
@@ -255,8 +204,7 @@ def put_thumbnails(abstracts: list[Abstract]) -> None:
     abstracts_len = len(abstracts)
     for i, a in enumerate(abstracts):
         # サムネ画像URLがなければもともとの画像を削除
-        # try catchでいきなりdelete_itemの場合、拡張子がjpgとは限らない可能性がある
-        # ファイル名の前方一致でで検索し、あれば削除する
+        # ファイル名の前方一致で検索し、あれば削除する
         if a.thumbnail_url is None:
             res = s3.list_objects_v2(
                 Bucket=os.environ["NAME_BUCKET_IMAGES"],
@@ -297,52 +245,24 @@ def register_restaurants(abstracts: list[Abstract]) -> None:
     abstracts: list[Abstract]
         概要情報リスト
     """
-    # 小エリア名とコードのdictを作成
-    small_area_names = list(
-        set(
-            [a.small_area_name for a in abstracts]
-        )
-    )
-    sql = f"""
-SELECT
-    code,
-    name
-FROM
-    small_area_master
-WHERE
-    name IN ({', '.join(['?'] * len(small_area_names))});
-"""
-    res = HSS.exec_query(sql, small_area_names)
-    small_area_name_codes = {
-        r[1]: r[0]
-        for r in res if r != ""
-    }
-
     # SQL
     values_row_str = f"({', '.join(['?'] * 3)})"
     sql = f"""
 INSERT INTO
-    restaurants_tmp(id, small_area_code, is_thumbnail)
+    restaurants (id, name, is_thumbnail)
 VALUES
     {', '.join([values_row_str] * len(abstracts))}
-ON CONFLICT(id) DO UPDATE SET
-    small_area_code = excluded.small_area_code,
-    is_thumbnail = excluded.is_thumbnail;
+ON DUPLICATE KEY UPDATE name = VALUES(name), is_thumbnail = VALUES(is_thumbnail);
 """
-
     # パラメータ
     params = []
     for a in abstracts:
         is_thumbnail = 0
-        if a.thumbnail_url is not None:
+        if type(a.thumbnail_url) == str:
             is_thumbnail = 1
-        params.extend([a.id, small_area_name_codes[a.small_area_name], is_thumbnail])
-    hss = HandlerS3Sqlte(
-        os.environ["NAME_BUCKET_DATABASE"],
-        os.environ["NAME_FILE_DATABASE"],
-        os.environ["NAME_LOCK_FILE_DATABASE"],
-    )
-    hss.exec_query_with_lock(sql, params)
+        params.extend([a.id, a.name, is_thumbnail])
+
+    DB_CLIENT.handle(sql, params)
 
 
 def register_tasks_scraping_detail(ids: list[str]) -> None:
@@ -354,25 +274,21 @@ def register_tasks_scraping_detail(ids: list[str]) -> None:
     ids: list[str]
         飲食店IDリスト
     """
+    # SQL
+    values_row_str = f"({', '.join(['?'] * 2)})"
+    sql = f"""
+INSERT INTO
+    update_tasks (kind, param)
+VALUES
+    {', '.join([values_row_str] * len(ids))}
+ON DUPLICATE KEY UPDATE kind = VALUES(kind), param = VALUES(param);
+    """
+    # パラメータ
+    params = []
+    for id in ids:
+        params.extend(["ScrapingDetail", id])
 
-    # 追加データの作成
-    put_requests = [
-        {
-            "PutRequest": {
-                "Item": dynamodb_types.serialize_dict(
-                    {"kind": os.environ["NAME_TASK_SCRAPING_DETAIL"], "param": id}
-                )
-            }
-        }
-        for id in ids
-    ]
-
-    # batch_write_itemは一度に25件までしか追加できないため
-    for i in range(0, len(put_requests), 25):
-        batch = put_requests[i : i + 25]
-        boto3.client("dynamodb").batch_write_item(
-            RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS"]: batch}
-        )
+    DB_CLIENT.handle(sql, params)
 
 
 def delete_task(kind: str, param: str) -> None:
@@ -387,10 +303,18 @@ def delete_task(kind: str, param: str) -> None:
     param: str
         パラメータ
     """
-    boto3.client("dynamodb").delete_item(
-        TableName=os.environ["NAME_DYNAMODB_TABLE_TASKS"],
-        Key=dynamodb_types.serialize_dict({"kind": kind, "param": param}),
-    )
+    # SQL
+    sql = """
+DELETE FROM
+    update_tasks
+WHERE
+    kind = ?
+    AND param = ?;
+"""
+
+    # パラメータ
+    params = [kind, param]
+    DB_CLIENT.handle(sql, params)
 
 
 def register_schedule() -> None:

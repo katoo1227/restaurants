@@ -104,18 +104,3 @@ set_test_events "LambdaGetRestaurants" "ArnGetRestaurants"
 
 # LambdaUpdateGenreMasterのテストイベントの設定
 set_test_events "LambdaUpdateGenreMaster" "ArnLambdaUpdateGenreMaster"
-
-# LambdaUpdateLargeServiceAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateLargeServiceAreaMaster" "ArnLambdaUpdateLargeServiceAreaMaster"
-
-# LambdaUpdateServiceAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateServiceAreaMaster" "ArnLambdaUpdateServiceAreaMaster"
-
-# LambdaUpdateLargeAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateLargeAreaMaster" "ArnLambdaUpdateLargeAreaMaster"
-
-# LambdaUpdateMiddleAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateMiddleAreaMaster" "ArnLambdaUpdateMiddleAreaMaster"
-
-# LambdaUpdateSmallAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateSmallAreaMaster" "ArnLambdaUpdateSmallAreaMaster"

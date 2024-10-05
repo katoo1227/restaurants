@@ -147,21 +147,6 @@ Resources:
     # Lambda - ジャンルマスタを更新
     - $file: resources/update_genre_master.yml
 
-    # Lambda - 大サービスエリアマスタを更新
-    - $file: resources/update_large_service_area_master.yml
-
-    # Lambda - サービスエリアマスタを更新
-    - $file: resources/update_service_area_master.yml
-
-    # Lambda - 大エリアマスタを更新
-    - $file: resources/update_large_area_master.yml
-
-    # Lambda - 中エリアマスタを更新
-    - $file: resources/update_middle_area_master.yml
-
-    # Lambda - 小エリアマスタを更新
-    - $file: resources/update_small_area_master.yml
-
     # Lambda - 概要一覧ページの登録
     - $file: resources/register_tasks_pages.yml
 
@@ -204,36 +189,6 @@ Outputs:
         Value: !GetAtt "LambdaUpdateGenreMaster.Arn"
         Export:
             Name: !Sub "${AWS::StackName}-LambdaUpdateGenreMaster"
-
-    # 大サービスエリアマスタ更新LambdaのARN
-    ArnLambdaUpdateLargeServiceAreaMaster:
-        Value: !GetAtt "LambdaUpdateLargeServiceAreaMaster.Arn"
-        Export:
-            Name: !Sub "${AWS::StackName}-LambdaUpdateLargeServiceAreaMaster"
-
-    # サービスエリアマスタ更新LambdaのARN
-    ArnLambdaUpdateServiceAreaMaster:
-        Value: !GetAtt "LambdaUpdateServiceAreaMaster.Arn"
-        Export:
-            Name: !Sub "${AWS::StackName}-LambdaUpdateServiceAreaMaster"
-
-    # 大エリアマスタ更新LambdaのARN
-    ArnLambdaUpdateLargeAreaMaster:
-        Value: !GetAtt "LambdaUpdateLargeAreaMaster.Arn"
-        Export:
-            Name: !Sub "${AWS::StackName}-LambdaUpdateLargeAreaMaster"
-
-    # 中エリアマスタ更新LambdaのARN
-    ArnLambdaUpdateMiddleAreaMaster:
-        Value: !GetAtt "LambdaUpdateMiddleAreaMaster.Arn"
-        Export:
-            Name: !Sub "${AWS::StackName}-LambdaUpdateMiddleAreaMaster"
-
-    # 小エリアマスタ更新LambdaのARN
-    ArnLambdaUpdateSmallAreaMaster:
-        Value: !GetAtt "LambdaUpdateSmallAreaMaster.Arn"
-        Export:
-            Name: !Sub "${AWS::StackName}-LambdaUpdateSmallAreaMaster"
 
     # 概要情報スクレイピングタスクの登録（ページごと）LambdaのARN
     ArnLambdaRegisterTasksPages:
