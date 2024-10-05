@@ -47,8 +47,12 @@ Parameters:
     ParameterStoreNameGcpApiKey:
         Type: "String"
 
-    # SSMパラメータストア名 - Database APIキー
-    ParameterStoreNameDatabaseApiKey:
+    # パラメータストア名 - さくらサーバーのデータベースAPIキー
+    ParameterStoreNameSakuraDatabaseApiKey:
+        Type: "String"
+
+    # さくらサーバーのデータベースAPI URL
+    SakuraDatabaseApiUrl:
         Type: "String"
 
     # Lambdaレイヤー - Requests
@@ -62,6 +66,10 @@ Parameters:
 
     # Lambdaレイヤー - データベースクライアント
     LambdaLayerSqliteClient:
+        Type: "String"
+
+    # Lambdaレイヤー - データベースクライアント
+    LambdaLayerDbClient:
         Type: "String"
 
     # Lambdaレイヤー - DynamoDBの型変換

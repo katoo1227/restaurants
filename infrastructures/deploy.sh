@@ -138,12 +138,14 @@ build_deploy() {
         ParameterStoreNameLineNotifyWarning="${PARAMETER_STORE_NAME_LINE_NOTIFY_WARNING}" \
         ParameterStoreNameHotpepperApiKey="${PARAMETER_STORE_NAME_HOTPEPPER_API_KEY}" \
         ParameterStoreNameGcpApiKey="${PARAMETER_STORE_NAME_GCP_API_KEY}" \
-        ParameterStoreNameDatabaseApiKey="${PARAMETER_STORE_NAME_DATABASE_API_KEY}" \
+        ParameterStoreNameSakuraDatabaseApiKey="${PARAMETER_STORE_NAME_SAKURA_DATABASE_API_KEY}" \
+        SakuraDatabaseApiUrl="${SAKURA_HANDLE_DB_API_URL}" \
         Domain="${DOMAIN}" \
         FrontendBasicAuthorization=$(get_basic_authorization) \
         S3BucketPrefix="$S3_BUCKET_PREFIX" \
         LambdaLayerHotpepperApiClient=${outputs["ArnHotpepperApiClient"]} \
         LambdaLayerSqliteClient=${outputs["ArnSqliteClient"]} \
+        LambdaLayerDbClient=${outputs["ArnDbClient"]} \
         LambdaLayerDynamodbTypes=${outputs["ArnDynamodbTypes"]}
 }
 

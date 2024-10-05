@@ -11,14 +11,14 @@ LambdaUpdateGenreMaster:
         Runtime: "python3.12"
         Layers:
             - !Ref "LambdaLayerHotpepperApiClient"
-            - !Ref "LambdaLayerSqliteClient"
+            - !Ref "LambdaLayerDbClient"
         Environment:
             Variables:
+                ENV: !Ref "EnvironmentType"
+                SAKURA_DATABASE_API_KEY_PATH: !Ref "ParameterStoreNameSakuraDatabaseApiKey"
+                SAKURA_DATABASE_API_URL: !Ref "SakuraDatabaseApiUrl"
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
                 PARAMETER_STORE_NAME_HOTPEPPER_API_KEY: !Ref "ParameterStoreNameHotpepperApiKey"
-                NAME_BUCKET_DATABASE: !Ref "S3Database"
-                NAME_FILE_DATABASE: !Ref "Sqlite3DbFileName"
-                NAME_LOCK_FILE_DATABASE: !Ref "Sqlite3DbLockFileName"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"
@@ -70,22 +70,12 @@ IamPolicyUpdateGenreMaster:
                       - "ssm:GetParameter"
                   Resource:
                       - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameHotpepperApiKey}"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameSakuraDatabaseApiKey}"
                 - Effect: "Allow"
                   Action:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
-                - Effect: "Allow"
-                  Action:
-                      - "s3:GetObject"
-                      - "s3:PutObject"
-                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbFileName}"
-                - Effect: "Allow"
-                  Action:
-                      - "s3:GetObject"
-                      - "s3:PutObject"
-                      - "s3:DeleteObject"
-                  Resource: !Sub "arn:aws:s3:::${S3Database}/${Sqlite3DbLockFileName}"
         Roles:
             - !Ref "IamRoleUpdateGenreMaster"
 

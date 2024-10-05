@@ -1,10 +1,8 @@
 import boto3
 import os
 import json
-from datetime import datetime
-import pytz
 from hotpepper_api_client import HotpepperApiClient
-from handler_s3_sqlite import HandlerS3Sqlte
+from db_client import DbClient
 from pydantic import BaseModel
 
 
@@ -50,7 +48,9 @@ def get_genres() -> list[Genre]:
     list[Genre]
     """
     # ホットペッパーAPIからジャンル一覧を取得
-    api_client = HotpepperApiClient(os.environ["PARAMETER_STORE_NAME_HOTPEPPER_API_KEY"])
+    api_client = HotpepperApiClient(
+        os.environ["PARAMETER_STORE_NAME_HOTPEPPER_API_KEY"]
+    )
     res = api_client.get_genres()
     return [
         Genre(
@@ -70,50 +70,24 @@ def update_genres(genres: list[Genre]) -> None:
     genre: list[Genre]
         ジャンル一覧
     """
-    query = get_upsert_query(genres)
-    hss = HandlerS3Sqlte(
-        os.environ["NAME_BUCKET_DATABASE"],
-        os.environ["NAME_FILE_DATABASE"],
-        os.environ["NAME_LOCK_FILE_DATABASE"],
-    )
-    hss.exec_query_with_lock(query[0], query[1])
-
-
-def get_upsert_query(genres: list[Genre]) -> tuple:
-    """
-    upsertを行うSQLとパラメータを取得
-
-    Parameters
-    ----------
-    genre: list[Genre]
-        ジャンル一覧
-
-    Returns
-    -------
-    tuple
-        sql: SQL文
-        params: placeholderの値
-    """
-
-    # 今の日時
-    tz = pytz.timezone("Asia/Tokyo")
-    now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
     # SQL
-    values_row_str = f"({', '.join(['?'] * 4)})"
+    values_row_str = f"({', '.join(['?'] * 2)})"
     sql = f"""
 INSERT INTO
-    genre_master(code, name, created_at, updated_at)
+    genre_master (code, name)
 VALUES
     {', '.join([values_row_str] * len(genres))}
-ON CONFLICT(code) DO UPDATE SET
-    name = excluded.name,
-    updated_at = excluded.updated_at;
-"""
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+    """
 
     # パラメータ
     params = []
     for g in genres:
-        params.extend([g.code, g.name, now, now])
+        params.extend([g.code, g.name])
 
-    return sql, params
+    db_client = DbClient(
+        os.environ["ENV"],
+        os.environ["SAKURA_DATABASE_API_KEY_PATH"],
+        os.environ["SAKURA_DATABASE_API_URL"]
+    )
+    db_client.handle(sql, params)

@@ -35,6 +35,18 @@ Resources:
             CompatibleRuntimes:
                 - "python3.12"
 
+    # データベースクライアント
+    DbClient:
+        Type: "AWS::Serverless::LayerVersion"
+        Properties:
+            LayerName: !If
+                - "IsProd"
+                - "RestaurantsDbClientProd"
+                - "RestaurantsDbClientDev"
+            ContentUri: "./src/db_client/"
+            CompatibleRuntimes:
+                - "python3.12"
+
     # DynamoDBの型変換
     DynamodbTypes:
         Type: "AWS::Serverless::LayerVersion"
@@ -59,6 +71,12 @@ Outputs:
         Value: !Ref "SqliteClient"
         Export:
             Name: "ArnSqliteClient"
+
+    # データベースクライアントのARN
+    ArnDbClient:
+        Value: !Ref "DbClient"
+        Export:
+            Name: "ArnDbClient"
 
     # DynamoDB型変換クライアント
     ArnDynamodbTypes:

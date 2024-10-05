@@ -1,3 +1,4 @@
+# IAMユーザー - さくらサーバーから使用
 IamUserSakuraDatabaseApi:
     Type: AWS::IAM::User
     Properties:
@@ -20,6 +21,6 @@ IamPolicySakuraDatabaseApi:
                   Action:
                       - "ssm:GetParameter"
                   Resource:
-                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameDatabaseApiKey}"
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameSakuraDatabaseApiKey}"
         Users:
             - !Ref "IamUserSakuraDatabaseApi"

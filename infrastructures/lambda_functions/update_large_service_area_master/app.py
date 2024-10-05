@@ -1,10 +1,8 @@
 import boto3
 import os
 import json
-from datetime import datetime
-import pytz
 from hotpepper_api_client import HotpepperApiClient
-from handler_s3_sqlite import HandlerS3Sqlte
+from db_client import DbClient
 from pydantic import BaseModel
 
 
@@ -50,7 +48,9 @@ def get_large_service_areas() -> list[LargeServiceArea]:
     list[LargeServiceArea]
     """
     # ホットペッパーAPIから大サービスエリア一覧を取得
-    api_client = HotpepperApiClient(os.environ["PARAMETER_STORE_NAME_HOTPEPPER_API_KEY"])
+    api_client = HotpepperApiClient(
+        os.environ["PARAMETER_STORE_NAME_HOTPEPPER_API_KEY"]
+    )
     res = api_client.get_large_service_areas()
     return [
         LargeServiceArea(
@@ -70,50 +70,23 @@ def update_large_service_areas(large_service_areas: list[LargeServiceArea]) -> N
     large_service_areas: list[LargeServiceArea]
         大サービスエリア一覧
     """
-    query = get_upsert_query(large_service_areas)
-    hss = HandlerS3Sqlte(
-        os.environ["NAME_BUCKET_DATABASE"],
-        os.environ["NAME_FILE_DATABASE"],
-        os.environ["NAME_LOCK_FILE_DATABASE"],
-    )
-    hss.exec_query_with_lock(query[0], query[1])
-
-
-def get_upsert_query(large_service_areas: list[LargeServiceArea]) -> tuple:
-    """
-    upsertを行うSQLとパラメータを取得
-
-    Parameters
-    ----------
-    large_service_areas: list[LargeServiceArea]
-        大サービスエリア一覧
-
-    Returns
-    -------
-    tuple
-        sql: SQL文
-        params: placeholderの値
-    """
-
-    # 今の日時
-    tz = pytz.timezone("Asia/Tokyo")
-    now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
-    # SQL
-    values_row_str = f"({', '.join(['?'] * 4)})"
+    values_row_str = f"({', '.join(['?'] * 2)})"
     sql = f"""
 INSERT INTO
-    large_service_area_master(code, name, created_at, updated_at)
+    large_service_area_master (code, name)
 VALUES
     {', '.join([values_row_str] * len(large_service_areas))}
-ON CONFLICT(code) DO UPDATE SET
-    name = excluded.name,
-    updated_at = excluded.updated_at;
+ON DUPLICATE KEY UPDATE name = VALUES(name);
 """
 
     # パラメータ
     params = []
     for a in large_service_areas:
-        params.extend([a.code, a.name, now, now])
+        params.extend([a.code, a.name])
 
-    return sql, params
+    db_client = DbClient(
+        os.environ["ENV"],
+        os.environ["SAKURA_DATABASE_API_KEY_PATH"],
+        os.environ["SAKURA_DATABASE_API_URL"],
+    )
+    db_client.handle(sql, params)
