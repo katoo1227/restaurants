@@ -144,9 +144,7 @@ build_deploy() {
         FrontendBasicAuthorization=$(get_basic_authorization) \
         S3BucketPrefix="$S3_BUCKET_PREFIX" \
         LambdaLayerHotpepperApiClient=${outputs["ArnHotpepperApiClient"]} \
-        LambdaLayerSqliteClient=${outputs["ArnSqliteClient"]} \
-        LambdaLayerDbClient=${outputs["ArnDbClient"]} \
-        LambdaLayerDynamodbTypes=${outputs["ArnDynamodbTypes"]}
+        LambdaLayerDbClient=${outputs["ArnDbClient"]}
 }
 
 # デプロイ処理

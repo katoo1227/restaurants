@@ -8,6 +8,3 @@ deploy_prod.env
 
 # Lambda Layers用
 /lambda_layers/src/*/python
-
-# ローカルのデータベースファイル
-/database/database.sqlite3

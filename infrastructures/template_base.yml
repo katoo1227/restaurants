@@ -65,15 +65,7 @@ Parameters:
         Type: "String"
 
     # Lambdaレイヤー - データベースクライアント
-    LambdaLayerSqliteClient:
-        Type: "String"
-
-    # Lambdaレイヤー - データベースクライアント
     LambdaLayerDbClient:
-        Type: "String"
-
-    # Lambdaレイヤー - DynamoDBの型変換
-    LambdaLayerDynamodbTypes:
         Type: "String"
 
     # ドメイン
@@ -87,16 +79,6 @@ Parameters:
     # S3バケットプレフィックス
     S3BucketPrefix:
         Type: "String"
-
-    # sqlite3データベースファイル名
-    Sqlite3DbFileName:
-        Type: "String"
-        Default: "database.sqlite3"
-
-    # sqlite3データベースロックファイル名
-    Sqlite3DbLockFileName:
-        Type: "String"
-        Default: "database.sqlite3.lock"
 
 Conditions:
     # 本番環境かどうか
@@ -117,15 +99,10 @@ Resources:
     # Cloudfront - 飲食店画像
     - $file: resources/cloudfront/images.yml
 
-    # S3 - データベース
-    - $file: resources/s3/database.yml
     # S3 - 画像格納バケット
     - $file: resources/s3/images.yml
     # S3 - フロントエンド
     - $file: resources/s3/frontend.yml
-
-    # DynamoDB
-    - $file: resources/dynamodb/tasks.yml
 
     # Route53 - バックエンド
     - $file: resources/route53/backend.yml
@@ -207,12 +184,6 @@ Outputs:
         Value: !GetAtt "LambdaGetRestaurants.Arn"
         Export:
             Name: !Sub "${AWS::StackName}-GetRestaurants"
-
-    # S3データベース格納バケット名
-    NameDatabaseBucket:
-        Value: !Ref "S3Database"
-        Export:
-            Name: !Sub "${AWS::StackName}-DatabaseBucketName"
 
     # S3画像格納バケット名
     NameImagesBucket:

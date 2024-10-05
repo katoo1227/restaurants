@@ -1,7 +1,0 @@
-S3Database:
-    Type: "AWS::S3::Bucket"
-    Properties:
-        BucketName: !If
-            - "IsProd"
-            - !Sub "${S3BucketPrefix}-restaurants-database-prod"
-            - !Sub "${S3BucketPrefix}-restaurants-database-dev"

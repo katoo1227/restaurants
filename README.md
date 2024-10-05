@@ -105,24 +105,3 @@ bash set_lambda_test_events.sh prod
 1. S3バケットを空にする
     - バケットは空にしてからでないと削除できないため
 2. CloudFormationスタックを削除
-
-## ローカルにてデータベース操作方法
-```sh
-# ローカルのsqliteへ接続
-$ bash database/handler.sh connect
-
-# ローカルのsqliteを初期化（全テーブルを再作成）
-$ bash database/handler.sh init
-
-# S3のsqliteファイルをローカルにダウンロード
-# 開発
-$ bash database/handler.sh download dev
-# 本番
-$ bash database/handler.sh download prod
-
-# ローカルのsqliteファイルをS3にアップロード
-# 開発
-$ bash database/handler.sh upload dev
-# 本番
-$ bash database/handler.sh upload prod
-```
