@@ -5,12 +5,9 @@ import requests
 import time
 import urllib.parse
 from bs4 import BeautifulSoup
-import dynamodb_types
 from http.client import RemoteDisconnected
 from pydantic import BaseModel
-from handler_s3_sqlite import HandlerS3Sqlte
-from datetime import datetime
-import pytz
+from db_client import DbClient
 
 
 class Task(BaseModel):
@@ -27,11 +24,17 @@ class Image(BaseModel):
     url: str
     alt: str
 
+class Genre(BaseModel):
+    """
+    ジャンル構造体
+    """
+    code: str
+    name: str
+
 class Detail(BaseModel):
     """
     詳細情報構造体
     """
-    name: str
     genre: str
     sub_genre: str|None
     address: str
@@ -41,10 +44,11 @@ class Detail(BaseModel):
     close_days: str
     parking: str
 
-HSS = HandlerS3Sqlte(
-    os.environ["NAME_BUCKET_DATABASE"],
-    os.environ["NAME_FILE_DATABASE"],
-    os.environ["NAME_LOCK_FILE_DATABASE"],
+# DBクライアント
+DB_CLIENT = DbClient(
+    os.environ["ENV"],
+    os.environ["SAKURA_DATABASE_API_KEY_PATH"],
+    os.environ["SAKURA_DATABASE_API_URL"],
 )
 
 def lambda_handler(event, context):
@@ -70,8 +74,11 @@ def lambda_handler(event, context):
         # 詳細情報の取得
         info = get_detail_info(task.param)
 
+        # ジャンル一覧を取得
+        genres = get_genres()
+
         # 飲食店情報の更新
-        update_restaurant(task.param, info)
+        update_restaurant(task.param, info, genres)
 
         # タスクの削除
         delete_task(task.kind, task.param)
@@ -94,20 +101,29 @@ def get_task() -> Task:
     -------
     Task
     """
-    res = boto3.client("dynamodb").query(
-        TableName=os.environ["NAME_DYNAMODB_TABLE_TASKS"],
-        KeyConditionExpression="kind = :kind",
-        ExpressionAttributeValues={
-            ":kind": dynamodb_types.serialize(os.environ["NAME_TASK_SCRAPING_DETAIL"])
-        },
-        Limit=1,
-    )
+    sql = f"""
+SELECT
+    kind,
+    param
+FROM
+    update_tasks
+WHERE
+    kind = ?
+ORDER BY
+    created_at ASC
+LIMIT
+    1;
+"""
+
+    # パラメータ
+    params = ["ScrapingDetail"]
+    res = DB_CLIENT.select(sql, params)
 
     # なければ空オブジェクトで返却
-    if len(res["Items"]) == 0:
+    if len(res["data"]) == 0:
         return {}
 
-    return Task(**dynamodb_types.deserialize_dict(res["Items"][0]))
+    return Task(**res["data"][0])
 
 
 def delete_schedule() -> None:
@@ -162,7 +178,7 @@ DELETE FROM
 WHERE
     id = ?;
 """
-        HSS.exec_query_with_lock(sql, [id])
+        DB_CLIENT.handle(sql, [id])
         return
 
     # HTML解析
@@ -190,7 +206,7 @@ WHERE
         raise Exception(f"飲食店画像一覧の取得に失敗。{id}")
 
     # 画像URLとaltを格納
-    img_infos = []
+    img_infos: list[Image] = []
     if is_jsc_photo_list:
         for elm in jsc_photo_list:
             img_path = elm.get("data-src")
@@ -230,9 +246,9 @@ FROM
 WHERE
     id = ?;
 """
-    res = HSS.exec_query(sql, [id])
+    res = DB_CLIENT.select(sql, [id])
 
-    items_len = res[0][0]
+    items_len = res["data"][0]["cnt"]
     img_infos_len = len(img_infos)
     if img_infos_len < items_len:
         # S3内の飲食店画像一覧を取得
@@ -249,10 +265,13 @@ DELETE FROM
     images
 WHERE
     id = ?
-    AND order_num >= ?;
+ORDER BY
+    order_num DESC
+LIMIT
+    ?
 """
         params = [id, items_len - img_infos_len]
-        HSS.exec_query_with_lock(sql, params)
+        DB_CLIENT.handle(sql, params)
 
         # S3画像の削除
         for i in range(items_len - img_infos_len):
@@ -282,50 +301,22 @@ WHERE
             time.sleep(1)
 
     # imageテーブルを更新
-    query = get_images_upsert_sql(id, img_infos)
-    HSS.exec_query_with_lock(query[0], query[1])
-
-    return img_infos_len
-
-def get_images_upsert_sql(id: str, images: list[Image]) -> tuple:
-    """
-    imagesテーブルのupsertのSQL文を取得
-
-    Parameters
-    ----------
-    id: str
-        飲食店ID
-    images: list[Image]
-        画像情報リスト
-
-    Returns
-    -------
-    tuple
-        sql: SQL文
-        params: placeholderの値
-    """
-    # 今の日時
-    tz = pytz.timezone("Asia/Tokyo")
-    now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
-    # SQL
-    values_row_str = f"({', '.join(['?'] * 5)})"
+    values_row_str = f"({', '.join(['?'] * 3)})"
     sql =  f"""
 INSERT INTO
-    images(id, order_num, name, created_at, updated_at)
+    images(id, order_num, name)
 VALUES
-    {', '.join([values_row_str] * len(images))}
-ON CONFLICT(id, order_num) DO UPDATE SET
-    name = excluded.name,
-    updated_at = excluded.updated_at;
+    {', '.join([values_row_str] * len(img_infos))}
+ON DUPLICATE KEY UPDATE name = VALUES(name);
 """
-
-    # パラメータ
     params = []
-    for i, image in enumerate(images):
-        params.extend([id, i + 1, image.alt, now, now])
+    for i, image in enumerate(img_infos):
+        params.extend([id, i + 1, image.alt])
 
-    return sql, params
+    # query = get_images_upsert_sql(id, img_infos)
+    DB_CLIENT.handle(sql, params)
+
+    return img_infos_len
 
 
 def get_detail_info(id: str) -> Detail:
@@ -343,7 +334,6 @@ def get_detail_info(id: str) -> Detail:
     """
     # 返り値の初期化
     result = {
-        "name": "",
         "genre": "",
         "sub_genre": None,
         "address": "",
@@ -363,12 +353,6 @@ def get_detail_info(id: str) -> Detail:
         soup = BeautifulSoup(html.content, "html.parser")
     except RemoteDisconnected as e:
         raise Exception(f"{e}\n{url}")
-
-    # 飲食店名
-    name_dom = soup.select_one("h1.shopName")
-    if name_dom is None:
-        raise Exception(f"飲食店名の取得失敗。{url}")
-    result["name"] = name_dom.text
 
     # ジャンル・サブジャンル
     section_blocks = soup.select(".jscShopInfoInnerSection .shopInfoInnerSectionBlock")
@@ -478,8 +462,25 @@ def get_detail_info(id: str) -> Detail:
 
     return Detail(**result)
 
+def get_genres() -> list[Genre]:
+    """
+    ジャンル一覧を取得
 
-def update_restaurant(id: str, info: Detail) -> None:
+    Returns
+    -------
+    list
+    """
+    sql = f"""
+SELECT
+    code,
+    name
+FROM
+    genre_master;
+"""
+    res = DB_CLIENT.select(sql, [])
+    return [Genre(**r) for r in res["data"]]
+
+def update_restaurant(id: str, info: Detail, genres: list[Genre]) -> None:
     """
     飲食店テーブルの更新
 
@@ -489,39 +490,36 @@ def update_restaurant(id: str, info: Detail) -> None:
         飲食店ID
     info: Detail
         詳細情報
+    genres: list[Genre]
+        ジャンル一覧
     """
 
-    # ジャンルをコードに変換
-    genres = [info.genre]
-    if info.sub_genre is not None:
-        genres.extend(info.sub_genre)
+    # ジャンル・サブジャンルのコード
+    genre_code = None
+    sub_genre_code = None
+    for g in genres:
+        # ジャンル・サブジャンル共にコードを設定できていれば抜ける
+        if genre_code != None and sub_genre_code != None:
+            break
+
+        # ジャンルコードが設定されていてサブジャンルがなかったら抜ける
+        if genre_code != None and info.sub_genre == None:
+            break
+
+        # ジャンル
+        if info.genre == g.name:
+            genre_code = g.code
+            continue
+
+        # サブジャンル
+        if info.sub_genre == g.name:
+            sub_genre_code = g.code
 
     # SQL
     sql = f"""
-SELECT
-    code,
-    name
-FROM
-    genre_master
-WHERE
-    name IN ({', '.join(['?'] * len(genres))});
-"""
-    res = HSS.exec_query(sql, genres)
-    genre_name_codes = {
-        r[1]: r[0]
-        for r in res if r != ""
-    }
-    genre_code = genre_name_codes[info.genre]
-    sub_genre_code = None
-    if info.sub_genre is not None:
-        sub_genre_code = genre_name_codes[info.sub_genre]
-
-    # restuarants_tmpテーブルの更新
-    sql = f"""
 UPDATE
-    restaurants_tmp
+    restaurants
 SET
-    name = ?,
     genre_code = ?,
     sub_genre_code = ?,
     address = ?,
@@ -529,12 +527,14 @@ SET
     longitude = ?,
     open_hours = ?,
     close_days = ?,
-    parking = ?
+    parking = ?,
+    is_complete = 1
 WHERE
-    id = ?;
+    id = ?
 """
+
+    # パラメータ
     params = [
-        info.name,
         genre_code,
         sub_genre_code,
         info.address,
@@ -545,10 +545,11 @@ WHERE
         info.parking,
         id
     ]
-    HSS.exec_query_with_lock(sql, params)
+
+    DB_CLIENT.handle(sql, params)
 
 
-def delete_task(kind: str, id: str) -> None:
+def delete_task(kind: str, param: str) -> None:
     """
     タスクの削除
 
@@ -557,10 +558,18 @@ def delete_task(kind: str, id: str) -> None:
     kind: str
         タスクの種類
 
-    id: str
-        飲食店ID
+    param: str
+        パラメータ
     """
-    boto3.client("dynamodb").delete_item(
-        TableName=os.environ["NAME_DYNAMODB_TABLE_TASKS"],
-        Key=dynamodb_types.serialize_dict({"kind": kind, "param": id}),
-    )
+    # SQL
+    sql = """
+DELETE FROM
+    update_tasks
+WHERE
+    kind = ?
+    AND param = ?;
+"""
+
+    # パラメータ
+    params = [kind, param]
+    DB_CLIENT.handle(sql, params)

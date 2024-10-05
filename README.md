@@ -36,8 +36,8 @@ https://console.cloud.google.com/?hl=ja
 | ④ | /restaurants/api_key/hotpepper | SecureString | ホットペッパーAPIキー |
 | ⑤ | /google/geocoding/prod/key | SecureString | GCP APIキー（本番用） |
 | ⑥ | /google/geocoding/dev/key | SecureString | GCP APIキー（開発用） |
+| ⑦ | /sakura/restaurants/database_api_key | SecureString | さくらサーバー連携用APIキー |
 
-※パラメータ名は好みで変えてください
 ※CloudFormationで`SecureStringのパラメータは作成できない`ため、手動で登録
 
 ### その他（割愛）
@@ -97,28 +97,11 @@ bash set_lambda_test_events.sh dev
 bash set_lambda_test_events.sh prod
 ```
 
+## さくらサーバー連携用APIユーザーのアクセスキーとシークレットを作成
+- SAMではできないため、マネコンで手動で実施
+  - APIユーザーはマネコンのアクセスを無効化しているので、別のユーザーで実施
+
 ## リソースを全て削除する場合
 1. S3バケットを空にする
     - バケットは空にしてからでないと削除できないため
 2. CloudFormationスタックを削除
-
-## ローカルにてデータベース操作方法
-```sh
-# ローカルのsqliteへ接続
-$ bash database/handler.sh connect
-
-# ローカルのsqliteを初期化（全テーブルを再作成）
-$ bash database/handler.sh init
-
-# S3のsqliteファイルをローカルにダウンロード
-# 開発
-$ bash database/handler.sh download dev
-# 本番
-$ bash database/handler.sh download prod
-
-# ローカルのsqliteファイルをS3にアップロード
-# 開発
-$ bash database/handler.sh upload dev
-# 本番
-$ bash database/handler.sh upload prod
-```

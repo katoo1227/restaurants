@@ -1,0 +1,26 @@
+# IAMユーザー - さくらサーバーから使用
+IamUserSakuraDatabaseApi:
+    Type: AWS::IAM::User
+    Properties:
+        UserName: !If
+            - "IsProd"
+            - "RestaurantsDatabaseApiProd"
+            - "RestaurantsDatabaseApiDev"
+
+IamPolicySakuraDatabaseApi:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsDatabaseApiProd"
+            - "RestaurantsDatabaseApiDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameSakuraDatabaseApiKey}"
+        Users:
+            - !Ref "IamUserSakuraDatabaseApi"

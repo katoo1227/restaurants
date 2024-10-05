@@ -93,29 +93,8 @@ set_test_events "LambdaScrapingAbstract" "ArnScrapingAbstract"
 # LambdaScrapingDetailのテストイベントの設定
 set_test_events "LambdaScrapingDetail" "ArnScrapingDetail"
 
-# LambdaUpdateRestaurantsFromTmpのテストイベントの設定
-set_test_events "LambdaUpdateRestaurantsFromTmp" "ArnLambdaUpdateRestaurantsFromTmp"
-
-# LambdaNotifyNewRestaurantsのテストイベントの設定
-set_test_events "LambdaNotifyNewRestaurants" "ArnNotifyNewRestaurants"
-
 # LambdaGetRestaurantsのテストイベントの設定
 set_test_events "LambdaGetRestaurants" "ArnGetRestaurants"
 
 # LambdaUpdateGenreMasterのテストイベントの設定
 set_test_events "LambdaUpdateGenreMaster" "ArnLambdaUpdateGenreMaster"
-
-# LambdaUpdateLargeServiceAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateLargeServiceAreaMaster" "ArnLambdaUpdateLargeServiceAreaMaster"
-
-# LambdaUpdateServiceAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateServiceAreaMaster" "ArnLambdaUpdateServiceAreaMaster"
-
-# LambdaUpdateLargeAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateLargeAreaMaster" "ArnLambdaUpdateLargeAreaMaster"
-
-# LambdaUpdateMiddleAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateMiddleAreaMaster" "ArnLambdaUpdateMiddleAreaMaster"
-
-# LambdaUpdateSmallAreaMasterのテストイベントの設定
-set_test_events "LambdaUpdateSmallAreaMaster" "ArnLambdaUpdateSmallAreaMaster"

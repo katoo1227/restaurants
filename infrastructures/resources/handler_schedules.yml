@@ -9,8 +9,6 @@ LambdaHandlerSchedules:
             - "RestaurantsHandlerSchedulesDev"
         Role: !GetAtt "IamRoleHandlerSchedules.Arn"
         Runtime: "python3.12"
-        Layers:
-            - !Ref "LambdaLayerDynamodbTypes"
         Environment:
             Variables:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"

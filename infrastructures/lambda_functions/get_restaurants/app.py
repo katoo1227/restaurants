@@ -1,9 +1,8 @@
 import os
-import re
 import json
 import boto3
 from pydantic import BaseModel, ValidationError
-from handler_s3_sqlite import HandlerS3Sqlte
+from db_client import DbClient
 
 
 class EventParams(BaseModel):
@@ -25,8 +24,13 @@ class Restaurant(BaseModel):
     """
 
     id: str
+    name: str
     latitude: float
     longitude: float
+    genre_name: str
+    parking: str
+    is_thumbnail: int
+    distance: float
 
 
 def lambda_handler(event, context):
@@ -136,38 +140,39 @@ def get_restaurants(evt: EventParams) -> list[dict]:
 
     Returns
     -------
-    list
+    list[dict]
     """
 
-    hss = HandlerS3Sqlte(
-        os.environ["NAME_BUCKET_DATABASE"],
-        os.environ["NAME_FILE_DATABASE"],
-        os.environ["NAME_LOCK_FILE_DATABASE"],
-    )
-
     # SQL
-    sql = f"""
+    sql = """
 SELECT
-    id,
-    name,
-    latitude,
-    longitude,
-    genre_code,
-    parking,
-    is_thumbnail,
+    r.id,
+    r.name,
+    r.latitude,
+    r.longitude,
+    g.name AS genre_name,
+    r.parking,
+    r.is_thumbnail,
     (
         6371 * acos(
-            cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?))
-            + sin(radians(?)) * sin(radians(latitude))
+            cos(radians(?)) * cos(radians(r.latitude)) * cos(radians(r.longitude) - radians(?))
+            + sin(radians(?)) * sin(radians(r.latitude))
         )
     ) AS distance
 FROM
-    restaurants
+    restaurants r
+    INNER JOIN genre_master g ON r.genre_code = g.code
 WHERE
-    latitude BETWEEN ? AND ?
-    AND longitude BETWEEN ? AND ?
-LIMIT 2000;
+    r.is_complete = 1
+    AND r.latitude BETWEEN ? AND ?
+    AND r.longitude BETWEEN ? AND ?
+ORDER BY
+    distance ASC
+LIMIT
+    2000;
 """
+
+    # パラメータ
     params = [
         evt.lat,
         evt.lng,
@@ -177,31 +182,25 @@ LIMIT 2000;
         evt.lng_min,
         evt.lng_max,
     ]
-    res = hss.exec_query(sql, params)
 
-    # ジャンル名とコードのマッピング
-    genre_codes = list(set([r[4] for r in res]))
-    sql = f"""
-SELECT
-    code,
-    name
-FROM
-    genre_master
-WHERE
-    code IN ({', '.join(['?'] * len(genre_codes))});
-"""
-    genre_res = hss.exec_query(sql, genre_codes)
-    genre_name_codes = {r[0]: r[1] for r in genre_res if r != ""}
+    # DBから取得
+    db_client = DbClient(
+        os.environ["ENV"],
+        os.environ["SAKURA_DATABASE_API_KEY_PATH"],
+        os.environ["SAKURA_DATABASE_API_URL"],
+    )
+    res = db_client.select(sql, params)
 
     return [
-        {
-            "id": r[0],
-            "name": r[1],
-            "lat": r[2],
-            "lng": r[3],
-            "genre_name": genre_name_codes[r[4]],
-            "parking": r[5],
-            "is_thumbnail": r[6]
-        }
-        for r in res
+        Restaurant(
+            id=r["id"],
+            name=r["name"],
+            latitude=float(r["latitude"]),
+            longitude=float(r["longitude"]),
+            genre_name=r["genre_name"],
+            parking=r["parking"],
+            is_thumbnail=r["is_thumbnail"],
+            distance=r["distance"],
+        ).__dict__
+        for r in res["data"]
     ]

@@ -4,29 +4,17 @@ import json
 import requests
 import re
 from bs4 import BeautifulSoup
-import dynamodb_types
+from db_client import DbClient
 from pydantic import BaseModel
-from handler_s3_sqlite import HandlerS3Sqlte
+
 
 class EventParam(BaseModel):
     """
     イベントパラメータ構造体
     """
 
-    middle_area_code: str
+    service_area_code: str
 
-class Task(BaseModel):
-    """
-    タスク構造体
-    """
-    kind: str
-    param: str
-
-HSS = HandlerS3Sqlte(
-    os.environ["NAME_BUCKET_DATABASE"],
-    os.environ["NAME_FILE_DATABASE"],
-    os.environ["NAME_LOCK_FILE_DATABASE"],
-)
 
 def lambda_handler(event, context):
 
@@ -40,18 +28,11 @@ def lambda_handler(event, context):
         # パラメータを構造体に適用
         params = EventParam(**event)
 
-        # 必要なエリアコード一覧を取得
-        areas = get_area_codes(params.middle_area_code)
-
         # ページ数を取得
-        page_num = get_page_num(
-            areas[0],
-            params.middle_area_code,
-            areas[1]
-        )
+        page_num = get_page_num(params.service_area_code)
 
         # 概要情報スクレイピングタスクを登録
-        register_tasks_scraping_abstract(params.middle_area_code, page_num)
+        register_tasks_scraping_abstract(params.service_area_code, page_num)
 
         # スケジュールを登録
         register_schedule()
@@ -66,44 +47,8 @@ def lambda_handler(event, context):
 
     return success_response
 
-# エリア一覧を取得
-def get_area_codes(middle_area_code: str) -> tuple:
-    """
-    必要なエリア一覧を取得
 
-    Parameters
-    ----------
-    small_area_code: str
-        中エリアコード
-
-    Returns
-    -------
-    tuple
-        str
-            サービスエリアコード
-        list[str]
-            エリアリスト
-    """
-    sql = """
-SELECT
-    service.code,
-    small.code
-FROM
-    small_area_master small
-    INNER JOIN middle_area_master middle ON small.middle_area_code = middle.code
-    INNER JOIN large_area_master large ON middle.large_area_code = large.code
-    INNER JOIN service_area_master service ON large.service_area_code = service.code
-WHERE
-    middle.code = ?;
-"""
-
-    res = HSS.exec_query(sql, [middle_area_code])
-    return res[0][0], [r[1] for r in res]
-
-def get_page_num(
-    service_area_code: str,
-    middle_area_code: str,
-    small_area_codes: list[str]) -> int:
+def get_page_num(service_area_code: str) -> int:
     """
     ページ数を取得
 
@@ -111,10 +56,6 @@ def get_page_num(
     ----------
     service_area_code: str
         サービスエリアコード
-    middle_area_code: str
-        中エリアコード
-    areas: list[str]
-        小エリアコードリスト
 
     Returns
     -------
@@ -123,14 +64,7 @@ def get_page_num(
     """
 
     # URL
-    url_arr = [
-        "https://www.hotpepper.jp",
-        service_area_code,
-        middle_area_code,
-        "_".join(small_area_codes),
-        'bgn1'
-    ]
-    url = "/".join(url_arr)
+    url = f"https://www.hotpepper.jp/{service_area_code}/lst/bgn1/"
 
     # HTML解析
     html = requests.get(url)
@@ -151,40 +85,39 @@ def get_page_num(
     return int(match.group(1))
 
 
-def register_tasks_scraping_abstract(middle_area_code: str, page_num: int) -> None:
+def register_tasks_scraping_abstract(service_area_code: str, page_num: int) -> None:
     """
     タスクを登録
 
     Parameters
     ----------
-    middle_area_code: str
-        中エリアコード
+    service_area_code: str
+        サービスエリアコード
     page_num: int
         ページ数
     """
+    # SQL
+    values_row_str = f"({', '.join(['?'] * 2)})"
+    sql = f"""
+INSERT INTO
+    update_tasks (kind, param)
+VALUES
+    {', '.join([values_row_str] * page_num)}
+ON DUPLICATE KEY UPDATE kind = VALUES(kind), param = VALUES(param);
+    """
 
-    # 追加データの作成
-    put_requests = [
-        {
-            "PutRequest": {
-                "Item": dynamodb_types.serialize_dict(
-                    {
-                        "kind": os.environ["NAME_TASK_SCRAPING_ABSTRACT"],
-                        "param": f"{middle_area_code}_{i}"
-                    }
-                )
-            }
-        }
-        for i in range(1, page_num + 1)
-    ]
+    # パラメータ
+    params = []
+    for i in range(1, page_num + 1):
+        params.extend(["ScrapingAbstract", f"{service_area_code}_{str(i)}"])
 
-    # 追加リクエストを分割してバッチ処理
-    # batch_write_itemは一度に25件までしか追加できないため
-    for i in range(0, len(put_requests), 25):
-        batch = put_requests[i : i + 25]
-        boto3.client("dynamodb").batch_write_item(
-            RequestItems={os.environ["NAME_DYNAMODB_TABLE_TASKS"]: batch}
-        )
+    db_client = DbClient(
+        os.environ["ENV"],
+        os.environ["SAKURA_DATABASE_API_KEY_PATH"],
+        os.environ["SAKURA_DATABASE_API_URL"],
+    )
+    db_client.handle(sql, params)
+
 
 def register_schedule() -> None:
     """

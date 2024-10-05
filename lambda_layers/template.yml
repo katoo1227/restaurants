@@ -24,26 +24,14 @@ Resources:
                 - "python3.12"
 
     # データベースクライアント
-    SqliteClient:
+    DbClient:
         Type: "AWS::Serverless::LayerVersion"
         Properties:
             LayerName: !If
                 - "IsProd"
-                - "RestaurantsSqliteClientProd"
-                - "RestaurantsSqliteClientDev"
-            ContentUri: "./src/splite_client/"
-            CompatibleRuntimes:
-                - "python3.12"
-
-    # DynamoDBの型変換
-    DynamodbTypes:
-        Type: "AWS::Serverless::LayerVersion"
-        Properties:
-            LayerName: !If
-                - "IsProd"
-                - "RestaurantsDynamodbTypesProd"
-                - "RestaurantsDynamodbTypesDev"
-            ContentUri: "./src/dynamodb_types/"
+                - "RestaurantsDbClientProd"
+                - "RestaurantsDbClientDev"
+            ContentUri: "./src/db_client/"
             CompatibleRuntimes:
                 - "python3.12"
 
@@ -55,13 +43,7 @@ Outputs:
             Name: "ArnHotpepperApiClient"
 
     # データベースクライアントのARN
-    ArnSqliteClient:
-        Value: !Ref "SqliteClient"
+    ArnDbClient:
+        Value: !Ref "DbClient"
         Export:
-            Name: "ArnSqliteClient"
-
-    # DynamoDB型変換クライアント
-    ArnDynamodbTypes:
-        Value: !Ref "DynamodbTypes"
-        Export:
-            Name: "ArnDynamodbTypes"
+            Name: "ArnDbClient"

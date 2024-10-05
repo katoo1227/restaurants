@@ -1,3 +1,2 @@
 pydantic
 beautifulsoup4
-pytz
