@@ -156,12 +156,6 @@ Resources:
     # Lambda - 詳細情報スクレイピング
     - $file: resources/scraping_detail.yml
 
-    # Lambda - tmpから飲食店テーブルへの更新
-    - $file: resources/update_restaurants_from_tmp.yml
-
-    # Lambda - 新規の飲食店通知
-    - $file: resources/notify_new_restaurants.yml
-
     # Lambda - 飲食店一覧情報を取得
     - $file: resources/get_restaurants.yml
 
@@ -207,18 +201,6 @@ Outputs:
         Value: !GetAtt "LambdaScrapingDetail.Arn"
         Export:
             Name: !Sub "${AWS::StackName}-ScrapingDetail"
-
-    # 一時テーブルからの飲食店テーブルの更新LambdaのARN
-    ArnUpdateRestaurantsFromTmp:
-        Value: !GetAtt "LambdaUpdateRestaurantsFromTmp.Arn"
-        Export:
-            Name: !Sub "${AWS::StackName}-UpdateRestaurantsFromTmp"
-
-    # 新規の飲食店通知LambdaのARN
-    ArnNotifyNewRestaurants:
-        Value: !GetAtt "LambdaNotifyNewRestaurants.Arn"
-        Export:
-            Name: !Sub "${AWS::StackName}-NotifyNewRestaurants"
 
     # 飲食店一覧情報の取得LambdaのARN
     ArnGetRestaurants:

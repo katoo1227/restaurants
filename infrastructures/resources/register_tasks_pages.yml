@@ -30,7 +30,7 @@ LambdaRegisterTasksPages:
             EventBridgeScheduleLambdaRegisterTasksPages:
                 Type: "ScheduleV2"
                 Properties:
-                    ScheduleExpression: cron(0 0 ? * SUN *)
+                    ScheduleExpression: cron(0 0 1 * ? *)
                     ScheduleExpressionTimezone: "Asia/Tokyo"
                     State: ENABLED
                     GroupName: !Ref "EventBridgeScheduleGroup"
