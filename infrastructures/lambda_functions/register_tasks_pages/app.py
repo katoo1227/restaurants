@@ -109,7 +109,12 @@ ON DUPLICATE KEY UPDATE kind = VALUES(kind), param = VALUES(param);
     # パラメータ
     params = []
     for i in range(1, page_num + 1):
-        params.extend(["ScrapingAbstract", f"{service_area_code}_{str(i)}"])
+        params.extend(
+            [
+                os.environ["NAME_TASK_SCRAPING_ABSTRACT_DB"],
+                f"{service_area_code}_{str(i)}",
+            ]
+        )
 
     db_client = DbClient(
         os.environ["ENV"],

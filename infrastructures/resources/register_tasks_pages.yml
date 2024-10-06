@@ -21,6 +21,7 @@ LambdaRegisterTasksPages:
                 ARN_LAMBDA_SCRAPING_ABSTRACT: !GetAtt "LambdaScrapingAbstract.Arn"
                 ARN_IAM_ROLE_INVOKE_SCRAPING_ABSTRACT: !GetAtt "IamRoleInvokeScrapingAbstract.Arn"
                 NAME_TASK_SCRAPING_ABSTRACT: !Ref "TaskNameScrapingAbstract"
+                NAME_TASK_SCRAPING_ABSTRACT_DB: !Ref "TaskNameScrapingAbstractDb"
         Handler: "app.lambda_handler"
         Architectures:
             - "arm64"

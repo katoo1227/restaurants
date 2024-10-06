@@ -20,6 +20,7 @@ LambdaScrapingDetail:
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
                 ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
                 NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
+                NAME_TASK_SCRAPING_DETAIL_DB: !Ref "TaskNameScrapingDetailDb"
                 NAME_BUCKET_IMAGES: !Ref "S3Images"
                 PARAMETER_STORE_NAME_GCP_API_KEY: !Ref "ParameterStoreNameGcpApiKey"
                 NAME_TABLE_GCP_ADDRESS: !Ref "DynamoDBGcpAddress"

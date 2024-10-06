@@ -109,7 +109,7 @@ LIMIT
 """
 
     # パラメータ
-    params = ["ScrapingAbstract"]
+    params = [os.environ["NAME_TASK_SCRAPING_ABSTRACT_DB"]]
     res = DB_CLIENT.select(sql, params)
 
     # 無ければ空オブジェクトで返却
@@ -286,7 +286,7 @@ ON DUPLICATE KEY UPDATE kind = VALUES(kind), param = VALUES(param);
     # パラメータ
     params = []
     for id in ids:
-        params.extend(["ScrapingDetail", id])
+        params.extend([os.environ["NAME_TASK_SCRAPING_DETAIL_DB"], id])
 
     DB_CLIENT.handle(sql, params)
 

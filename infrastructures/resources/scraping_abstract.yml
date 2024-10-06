@@ -23,6 +23,8 @@ LambdaScrapingAbstract:
                 ARN_IAM_ROLE_INVOKE_SCRAPING_DETAIL: !GetAtt "IamRoleInvokeScrapingDetail.Arn"
                 NAME_TASK_SCRAPING_ABSTRACT: !Ref "TaskNameScrapingAbstract"
                 NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
+                NAME_TASK_SCRAPING_ABSTRACT_DB: !Ref "TaskNameScrapingAbstractDb"
+                NAME_TASK_SCRAPING_DETAIL_DB: !Ref "TaskNameScrapingDetailDb"
                 NAME_BUCKET_IMAGES: !Ref "S3Images"
         Handler: "app.lambda_handler"
         Architectures:
