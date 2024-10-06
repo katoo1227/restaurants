@@ -112,6 +112,9 @@ Resources:
     # APIGateway - バックエンド
     - $file: resources/apigateway/backend.yml
 
+    # DynamoDB - GCPの住所・緯度経度
+    - $file: resources/dynamodb/gcp_address.yml
+
     # Lambda - LINE通知
     - $file: resources/line_notify.yml
 

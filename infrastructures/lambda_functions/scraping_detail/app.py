@@ -1,4 +1,5 @@
 import boto3
+from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
 import os
 import json
 import requests
@@ -8,6 +9,7 @@ from bs4 import BeautifulSoup
 from http.client import RemoteDisconnected
 from pydantic import BaseModel
 from db_client import DbClient
+from decimal import Decimal
 
 
 class Task(BaseModel):
@@ -440,25 +442,12 @@ def get_detail_info(id: str) -> Detail:
 
     # 緯度・経度
     if result["address"] != "":
-        # Google Geocoding APIで住所から緯度・経度を取得
-        res = boto3.client("ssm").get_parameter(
-            Name=os.environ["PARAMETER_STORE_NAME_GCP_API_KEY"],
-            WithDecryption=True,
-        )
-        url_params = {"address": result["address"], "key": res["Parameter"]["Value"]}
-        url = f"https://maps.googleapis.com/maps/api/geocode/json?{urllib.parse.urlencode(url_params)}"
-        response = requests.get(url)
 
-        # 正しく取得できていなければ例外を投げる
-        data = response.json()
-        try:
-            lat = data["results"][0]["geometry"]["location"]["lat"]
-            lng = data["results"][0]["geometry"]["location"]["lng"]
-        except KeyError:
-            raise Exception(f"緯度経度の取得に失敗。\n{id}\n{url}")
+        # 緯度経度の取得
+        latlng = get_latlng_by_address(result["address"])
 
-        result["latitude"] = lat
-        result["longitude"] = lng
+        result["latitude"] = latlng["lat"]
+        result["longitude"] = latlng["lng"]
 
     return Detail(**result)
 
@@ -573,3 +562,65 @@ WHERE
     # パラメータ
     params = [kind, param]
     DB_CLIENT.handle(sql, params)
+
+def get_latlng_by_address(address: str) -> dict:
+    """
+    住所から緯度経度を取得
+
+    Parameters
+    ----------
+    address: str
+        住所
+
+    Return
+    ------
+    dict
+        lat: float 緯度
+        lng: float 経度
+    """
+    # DynamoDBクライアント
+    dynamodb_client = boto3.client('dynamodb')
+
+    # DynamoDBから取得できていれば返す
+    res = dynamodb_client.get_item(
+        TableName=os.environ["NAME_TABLE_GCP_ADDRESS"],
+        Key={'address': {'S': address}}
+    )
+    item = res.get("Item")
+    if item is not None:
+        d = TypeDeserializer()
+        return {
+            "lat": float(d.deserialize(item["lat"])),
+            "lng": float(d.deserialize(item["lng"]))
+        }
+
+    # Google Geocoding APIで住所から緯度・経度を取得
+    res = boto3.client("ssm").get_parameter(
+        Name=os.environ["PARAMETER_STORE_NAME_GCP_API_KEY"],
+        WithDecryption=True,
+    )
+    url_params = {"address": address, "key": res["Parameter"]["Value"]}
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?{urllib.parse.urlencode(url_params)}"
+    response = requests.get(url)
+    data = response.json()
+    try:
+        lat = data["results"][0]["geometry"]["location"]["lat"]
+        lng = data["results"][0]["geometry"]["location"]["lng"]
+    except KeyError:
+        raise Exception(f"緯度経度の取得に失敗。\n{id}\n{url}")
+
+    # DynamoDBに保存
+    s = TypeSerializer()
+    dynamodb_client.put_item(
+        TableName=os.environ["NAME_TABLE_GCP_ADDRESS"],
+        Item={
+            "address": s.serialize(address),
+            "lat": s.serialize(Decimal(str(lat))),
+            "lng": s.serialize(Decimal(str(lng)))
+        }
+    )
+
+    return {
+        "lat": lat,
+        "lng": lng
+    }
