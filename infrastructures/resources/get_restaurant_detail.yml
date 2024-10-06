@@ -1,0 +1,72 @@
+# Lambda
+LambdaGetRestaurantDetail:
+    Type: "AWS::Serverless::Function"
+    Properties:
+        CodeUri: "./lambda_functions/get_restaurant_detail/"
+        FunctionName: !If
+            - "IsProd"
+            - "RestaurantsGetRestaurantDetailProd"
+            - "RestaurantsGetRestaurantDetailDev"
+        Role: !GetAtt "IamRoleGetRestaurantDetail.Arn"
+        Runtime: "python3.12"
+        Layers:
+            - !Ref "LambdaLayerDbClient"
+        Environment:
+            Variables:
+                ENV: !Ref "EnvironmentType"
+                SAKURA_DATABASE_API_KEY_PATH: !Ref "ParameterStoreNameSakuraDatabaseApiKey"
+                SAKURA_DATABASE_API_URL: !Ref "SakuraDatabaseApiUrl"
+                ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                FRONTEND_DOMAIN: "{{replace_frontend_domains}}"
+        Handler: "app.lambda_handler"
+        Architectures:
+            - "arm64"
+        Timeout: 30
+
+        Events:
+            GetApi:
+                Type: "Api"
+                Properties:
+                    Path: "/get-restaurant_detail"
+                    Method: "post"
+                    RestApiId: !Ref "ApiGatewayBackend"
+
+# IAMロール
+IamRoleGetRestaurantDetail:
+    Type: "AWS::IAM::Role"
+    Properties:
+        RoleName: !If
+            - "IsProd"
+            - "RestaurantsGetRestaurantDetailProd"
+            - "RestaurantsGetRestaurantDetailDev"
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Principal:
+                      Service: "lambda.amazonaws.com"
+                  Action: "sts:AssumeRole"
+
+# IAMポリシー
+IamPolicyGetRestaurantDetail:
+    Type: "AWS::IAM::Policy"
+    Properties:
+        PolicyName: !If
+            - "IsProd"
+            - "RestaurantsGetRestaurantDetailProd"
+            - "RestaurantsGetRestaurantDetailDev"
+        PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Effect: "Allow"
+                  Action:
+                      - "ssm:GetParameter"
+                  Resource:
+                      - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParameterStoreNameSakuraDatabaseApiKey}"
+                - Effect: "Allow"
+                  Action:
+                      - "lambda:InvokeFunction"
+                  Resource:
+                      - !GetAtt "LambdaErrorCommon.Arn"
+        Roles:
+            - !Ref "IamRoleGetRestaurantDetail"

@@ -149,6 +149,9 @@ Resources:
     # Lambda - 飲食店一覧情報を取得
     - $file: resources/get_restaurants.yml
 
+    # Lambda - 飲食店詳細情報を取得
+    - $file: resources/get_restaurant_detail.yml
+
 Outputs:
     # LINE通知LambdaのARN
     ArnLambdaLineNotify:
@@ -197,6 +200,12 @@ Outputs:
         Value: !GetAtt "LambdaGetRestaurants.Arn"
         Export:
             Name: !Sub "${AWS::StackName}-GetRestaurants"
+
+    # 飲食店詳細情報の取得LambdaのARN
+    ArnGetRestaurantDetail:
+        Value: !GetAtt "LambdaGetRestaurantDetail.Arn"
+        Export:
+            Name: !Sub "${AWS::StackName}-GetRestaurantDetail"
 
     # S3画像格納バケット名
     NameImagesBucket:

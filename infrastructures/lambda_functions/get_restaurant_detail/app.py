@@ -10,27 +10,31 @@ class EventParams(BaseModel):
     イベントパラメータ
     """
 
-    lat: float
-    lng: float
-    lat_min: float
-    lat_max: float
-    lng_min: float
-    lng_max: float
+    id: str
 
 
-class Restaurant(BaseModel):
+class Image(BaseModel):
+    """
+    画像データ
+    """
+
+    order_num: int
+    alt: str
+
+
+class Detail(BaseModel):
     """
     飲食店データ
     """
 
-    id: str
     name: str
-    latitude: float
-    longitude: float
-    genre_name: str
+    genre: str
+    sub_genre: str | None
+    address: str
+    open_hours: str
+    close_days: str
     parking: str
-    is_thumbnail: int
-    distance: float
+    images: list[dict]
 
 
 def lambda_handler(event, context):
@@ -52,7 +56,8 @@ def lambda_handler(event, context):
         evt = get_params(event)
 
         # 緯度経度の範囲内の飲食店を取得
-        response["body"] = json.dumps(get_restaurants(evt))
+        d = get_detail(evt.id)
+        response["body"] = json.dumps(d.__dict__)
     except Exception as e:
         response["statusCode"] = 500
         payload = {"function_name": context.function_name, "msg": str(e)}
@@ -114,23 +119,13 @@ def get_params(evt: dict) -> EventParams:
 
     body = json.loads(evt["body"])
 
-    # 最大と最小が逆であれば正す
-    if body["lat_max"] < body["lat_min"]:
-        lat_tmp = body["lat_max"]
-        body["lat_max"] = body["lat_min"]
-        body["lat_min"] = lat_tmp
-    if body["lng_max"] < body["lng_min"]:
-        lng_tmp = body["lng_max"]
-        body["lng_max"] = body["lng_min"]
-        body["lng_min"] = lng_tmp
-
     try:
         return EventParams(**body)
     except ValidationError as e:
         raise Exception(f"{str(e.json())}")
 
 
-def get_restaurants(evt: EventParams) -> list[dict]:
+def get_detail(id: str) -> Detail:
     """
     緯度経度の範囲内の飲食店を取得
 
@@ -140,48 +135,35 @@ def get_restaurants(evt: EventParams) -> list[dict]:
 
     Returns
     -------
-    list[dict]
+    Detail
     """
 
     # SQL
     sql = """
 SELECT
-    r.id,
     r.name,
-    r.latitude,
-    r.longitude,
-    g.name AS genre_name,
+    g1.name AS genre,
+    g2.name AS sub_genre,
+    r.address,
+    r.open_hours,
+    r.close_days,
     r.parking,
-    r.is_thumbnail,
-    (
-        6371 * acos(
-            cos(radians(?)) * cos(radians(r.latitude)) * cos(radians(r.longitude) - radians(?))
-            + sin(radians(?)) * sin(radians(r.latitude))
-        )
-    ) AS distance
+    i.order_num,
+    i.name AS alt
 FROM
     restaurants r
-    INNER JOIN genre_master g ON r.genre_code = g.code
+    INNER JOIN genre_master g1 ON r.genre_code = g1.code
+    LEFT JOIN genre_master g2 ON r.sub_genre_code = g2.code
+    LEFT JOIN images i USING (id)
 WHERE
-    r.is_complete = 1
-    AND r.latitude BETWEEN ? AND ?
-    AND r.longitude BETWEEN ? AND ?
+    r.id = ?
+    AND r.is_complete = 1
 ORDER BY
-    distance ASC
-LIMIT
-    1000;
+    i.order_num ASC;
 """
 
     # パラメータ
-    params = [
-        evt.lat,
-        evt.lng,
-        evt.lng,
-        evt.lat_min,
-        evt.lat_max,
-        evt.lng_min,
-        evt.lng_max,
-    ]
+    params = [id]
 
     # DBから取得
     db_client = DbClient(
@@ -191,16 +173,28 @@ LIMIT
     )
     res = db_client.select(sql, params)
 
-    return [
-        Restaurant(
-            id=r["id"],
-            name=r["name"],
-            latitude=float(r["latitude"]),
-            longitude=float(r["longitude"]),
-            genre_name=r["genre_name"],
-            parking=r["parking"],
-            is_thumbnail=r["is_thumbnail"],
-            distance=r["distance"],
-        ).__dict__
-        for r in res["data"]
-    ]
+    # 最初の飲食店レコード
+    r = res["data"][0]
+    r_dict = {
+        "name": r["name"],
+        "genre": r["genre"],
+        "sub_genre": r["sub_genre"],
+        "address": r["address"],
+        "open_hours": r["open_hours"],
+        "close_days": r["close_days"],
+        "parking": r["parking"],
+    }
+
+    r_dict["images"] = []
+
+    # 画像がない場合はここで返す
+    if r["order_num"] is None:
+        return Detail(**r_dict)
+
+    # 順番に格納
+    for r in res["data"]:
+        # 型チェックのため、構造体を通す
+        image = Image(order_num=r["order_num"], alt=r["alt"])
+        r_dict["images"].append(image.__dict__)
+
+    return Detail(**r_dict)

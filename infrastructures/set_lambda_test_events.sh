@@ -96,5 +96,8 @@ set_test_events "LambdaScrapingDetail" "ArnScrapingDetail"
 # LambdaGetRestaurantsのテストイベントの設定
 set_test_events "LambdaGetRestaurants" "ArnGetRestaurants"
 
+# LambdaGetRestaurantDetailのテストイベントの設定
+set_test_events "LambdaGetRestaurantDetail" "ArnGetRestaurantDetail"
+
 # LambdaUpdateGenreMasterのテストイベントの設定
 set_test_events "LambdaUpdateGenreMaster" "ArnLambdaUpdateGenreMaster"
