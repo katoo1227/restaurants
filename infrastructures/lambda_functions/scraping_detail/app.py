@@ -118,7 +118,7 @@ LIMIT
 """
 
     # パラメータ
-    params = ["ScrapingDetail"]
+    params = [os.environ["NAME_TASK_SCRAPING_DETAIL_DB"]]
     res = DB_CLIENT.select(sql, params)
 
     # なければ空オブジェクトで返却

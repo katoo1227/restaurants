@@ -6,13 +6,13 @@ DynamoDBGcpAddress:
             - "RestaurantsGcpAddressProd"
             - "RestaurantsGcpAddressDev"
         AttributeDefinitions:
-            - AttributeName: address
-              AttributeType: S
+            - AttributeName: "address"
+              AttributeType: "S"
         KeySchema:
-            - AttributeName: address
-              KeyType: HASH
-        BillingMode: PROVISIONED
+            - AttributeName: "address"
+              KeyType: "HASH"
+        BillingMode: "PROVISIONED"
         ProvisionedThroughput:
             ReadCapacityUnits: 1
             WriteCapacityUnits: 1
-    DeletionPolicy: "Retain"
+        DeletionProtectionEnabled: true

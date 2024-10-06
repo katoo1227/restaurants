@@ -19,6 +19,16 @@ Parameters:
     TaskNameScrapingDetail:
         Type: "String"
 
+    # 更新タスク名 - 概要情報スクレイピング
+    TaskNameScrapingAbstractDb:
+        Type: "String"
+        Default: "ScrapingAbstract"
+
+    # 更新タスク名 - 詳細情報スクレイピング
+    TaskNameScrapingDetailDb:
+        Type: "String"
+        Default: "ScrapingDetail"
+
     # ARN - ACMのSSL証明書 - 東京
     ArnAcmSslCertficateTokyo:
         Type: "String"
