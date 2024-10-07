@@ -31,6 +31,8 @@ class Detail(BaseModel):
     genre: str
     sub_genre: str | None
     address: str
+    latitude: float
+    longitude: float
     open_hours: str
     close_days: str
     parking: str
@@ -145,6 +147,8 @@ SELECT
     g1.name AS genre,
     g2.name AS sub_genre,
     r.address,
+    r.latitude,
+    r.longitude,
     r.open_hours,
     r.close_days,
     r.parking,
@@ -180,6 +184,8 @@ ORDER BY
         "genre": r["genre"],
         "sub_genre": r["sub_genre"],
         "address": r["address"],
+        "latitude": float(r["latitude"]),
+        "longitude": float(r["longitude"]),
         "open_hours": r["open_hours"],
         "close_days": r["close_days"],
         "parking": r["parking"],
