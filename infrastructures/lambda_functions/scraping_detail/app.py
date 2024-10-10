@@ -75,6 +75,10 @@ def lambda_handler(event, context):
 
         # 詳細情報の取得
         info = get_detail_info(task.param)
+        if info is None:
+            # タスクの削除
+            delete_task(task.kind, task.param)
+            return success_response
 
         # ジャンル一覧を取得
         genres = get_genres()
@@ -321,9 +325,10 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
     return img_infos_len
 
 
-def get_detail_info(id: str) -> Detail:
+def get_detail_info(id: str) -> Detail|None:
     """
     詳細情報を取得
+    掲載停止されていればNoneを返す
 
     Parameters
     ----------
@@ -332,7 +337,7 @@ def get_detail_info(id: str) -> Detail:
 
     Returns
     -------
-    Detail
+    Detail|None
     """
     # 返り値の初期化
     result = {
@@ -351,6 +356,18 @@ def get_detail_info(id: str) -> Detail:
 
     # HTML解析
     html = requests.get(url)
+
+    # 200以外の場合はLINE通知して終了
+    if html.status_code != 200:
+        msg = f"飲食店詳細ページを開けませんでした。\nstatus_code: {html.status_code}\n{url}"
+        payload = {"type": 3, "msg": msg}
+        boto3.client("lambda").invoke(
+            FunctionName=os.environ["ARN_LAMBDA_LINE_NOTIFY"],
+            InvocationType="RequestResponse",
+            Payload=json.dumps(payload).encode("utf-8"),
+        )
+        return
+
     try:
         soup = BeautifulSoup(html.content, "html.parser")
     except RemoteDisconnected as e:

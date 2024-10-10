@@ -18,6 +18,7 @@ LambdaScrapingDetail:
                 SAKURA_DATABASE_API_KEY_PATH: !Ref "ParameterStoreNameSakuraDatabaseApiKey"
                 SAKURA_DATABASE_API_URL: !Ref "SakuraDatabaseApiUrl"
                 ARN_LAMBDA_ERROR_COMMON: !GetAtt "LambdaErrorCommon.Arn"
+                ARN_LAMBDA_LINE_NOTIFY: !GetAtt "LambdaLineNotify.Arn"
                 ARN_LAMBDA_HANDLER_SCHEDULES: !GetAtt "LambdaHandlerSchedules.Arn"
                 NAME_TASK_SCRAPING_DETAIL: !Ref "TaskNameScrapingDetail"
                 NAME_TASK_SCRAPING_DETAIL_DB: !Ref "TaskNameScrapingDetailDb"
@@ -67,6 +68,7 @@ IamPolicyScrapingDetail:
                       - "lambda:InvokeFunction"
                   Resource:
                       - !GetAtt "LambdaErrorCommon.Arn"
+                      - !GetAtt "LambdaLineNotify.Arn"
                       - !GetAtt "LambdaHandlerSchedules.Arn"
                 - Effect: "Allow"
                   Action:
