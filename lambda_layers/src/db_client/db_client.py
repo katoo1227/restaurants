@@ -18,9 +18,6 @@ class Query(BaseModel):
 
 class DbClient:
 
-    # SSMクライアント
-    _ssm = boto3.client("ssm")
-
     # キャッシュの有効期限（秒）
     _cache_duration = 86400
 
@@ -36,7 +33,7 @@ class DbClient:
         self._headers = {
             "Content-Type": "application/json",
             "Env": env,
-            "X-Api-Key": self.__getApiKey(api_key_path),
+            "X-Api-Key": self.__get_api_key(api_key_path),
         }
 
         # ペイロードの初期化
@@ -129,7 +126,7 @@ class DbClient:
         data = r.__dict__["_content"].decode("utf-8")
         raise Exception(f"DB操作に失敗しました。{data}")
 
-    def __getApiKey(self, api_key_path: str) -> str:
+    def __get_api_key(self, api_key_path: str) -> str:
         """
         APIキーを取得
 
@@ -153,7 +150,7 @@ class DbClient:
                     return data["data"]
 
         # SSMパラメータストアからAPIキーを取得
-        res = self._ssm.get_parameter(Name=api_key_path, WithDecryption=True)
+        res = boto3.client("ssm").get_parameter(Name=api_key_path, WithDecryption=True)
 
         # キャッシュの生成
         data = {"data": res["Parameter"]["Value"], "expire": now + self._cache_duration}
